@@ -1,0 +1,63 @@
+[gd_scene format=3 uid="uid://d1w4eaceb4srs"]
+
+[ext_resource type="PackedScene" uid="uid://dcuv8tlymi3j3" path="res://Cenario_ideia (1).blend" id="1_f3sb7"]
+[ext_resource type="Script" uid="uid://cuqsqvr3m8xxl" path="res://character_body_3d.gd" id="1_fj7yv"]
+[ext_resource type="PackedScene" uid="uid://cp36w1u2p3dgk" path="res://flashlight.tscn" id="2_036b0"]
+[ext_resource type="PackedScene" uid="uid://qovali6bqyg" path="res://shilhueta.tscn" id="3_tlwt5"]
+[ext_resource type="AudioStream" uid="uid://dxq3ks60h8fj0" path="res://Strong Wind Sound _ 30 min _ No Ads [zrDEaqecPyM] (1).mp3" id="4_aqk2v"]
+[ext_resource type="Script" uid="uid://c02d3gemekp3" path="res://world_environment.gd" id="4_dwbse"]
+[ext_resource type="Script" uid="uid://cvyai5hx3rw75" path="res://gerenciador_de_clima.gd" id="6_dwbse"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3e70g"]
+
+[sub_resource type="Environment" id="Environment_pkg7o"]
+
+[node name="World" type="Node3D" unique_id=1853283299 groups=["player"]]
+
+[node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1632349647 groups=["player"]]
+transform = Transform3D(0.9387674, 0, 0, 0, 1, 0, 0, 0, 0.06093094, 0, 0, 22.03491)
+script = ExtResource("1_fj7yv")
+SPEED = 6.005
+BOB_FREQUENCY = 8.0
+BOB_AMPLITUDE = 0.185
+
+[node name="Camera3D" type="Camera3D" parent="CharacterBody3D" unique_id=191087586 groups=["player"]]
+transform = Transform3D(1.0652266, 0, 0, 0, 1, 0, 0, 0, 16.412022, 0, 2.951023, 11.93927)
+
+[node name="Flashlight" parent="CharacterBody3D/Camera3D" unique_id=1723816638 instance=ExtResource("2_036b0")]
+transform = Transform3D(0.2375505, 0, 0, 0, -0.025367875, 0.25596336, 0, -0.21912001, -0.02963329, 0.48565233, -0.49560785, -0.59350395)
+
+[node name="SpotLight3D" type="SpotLight3D" parent="CharacterBody3D/Camera3D/Flashlight" unique_id=1410599914]
+transform = Transform3D(4.139125, -0.7442002, -0.18656369, -0.3035847, -0.62587005, -4.3487873, 0.6856901, 3.9255939, -0.36937737, 0.0071520805, 1.7566757, -0.0037221909)
+light_energy = 7.53
+light_size = 0.632
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D" unique_id=1673459786 groups=["player"]]
+transform = Transform3D(1.9375749, 0, 0, 0, 3.3105235, 0, 0, 0, 21.393694, -0.1179351, 2.4270744, 16.717804)
+shape = SubResource("BoxShape3D_3e70g")
+
+[node name="Cenario_ideia (1)" parent="." unique_id=744459673 instance=ExtResource("1_f3sb7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.927418, -6.9245434, 40.018982)
+
+[node name="shilhueta" parent="." unique_id=272194737 node_paths=PackedStringArray("camera") groups=["player"] instance=ExtResource("3_tlwt5")]
+transform = Transform3D(1.4772635, 0, 0, 0, 2.2648096, 0, 0, 0, 1.8086593, 4.901308, -6.337505, 70.305115)
+camera = NodePath("../CharacterBody3D/Camera3D")
+look_threshold = 0.69
+
+[node name="somAmbiente" type="AudioStreamPlayer3D" parent="." unique_id=1721747949]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.951023, 22.76238)
+stream = ExtResource("4_aqk2v")
+volume_db = -10.149
+autoplay = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=971834523]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.32431, 53.419754, 58.1848)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=390710854]
+environment = SubResource("Environment_pkg7o")
+script = ExtResource("4_dwbse")
+
+[node name="GerenciadorDeClima" type="Node3D" parent="." unique_id=1313632360 node_paths=PackedStringArray("world_environment", "directional_light")]
+script = ExtResource("6_dwbse")
+world_environment = NodePath("../WorldEnvironment")
+directional_light = NodePath("../DirectionalLight3D")

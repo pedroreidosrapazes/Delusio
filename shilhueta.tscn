@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://qovali6bqyg"]
+
+[ext_resource type="Script" uid="uid://ih7ttt54eycj" path="res://silhueta.gd" id="1_6fegh"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_35478"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.00020186674, 1.7556717e-05, 0, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_dqkpi"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_036b0"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jlijj"]
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_dqkpi"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8l18j"]
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_35478"]
+
+[node name="silhueta" type="Node3D" unique_id=272194737]
+script = ExtResource("1_6fegh")
+
+[node name="VisibleOnScreenNotifier3D" type="VisibleOnScreenNotifier3D" parent="." unique_id=1985341970]
+transform = Transform3D(1, 0, 0, 0, 1.4257255, 0, 0, 0, 1, 0, 1.3857329, 0)
+
+[node name="mesh" type="Node3D" parent="." unique_id=37922867]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="mesh" unique_id=263263387]
+
+[node name="Head" type="MeshInstance3D" parent="mesh/MeshInstance3D" unique_id=1942186082]
+transform = Transform3D(0.32040122, 0, 0, 0, 0.49064353, 0, 0, 0, 0.9228903, 0, 2.2234564, 0)
+material_override = SubResource("StandardMaterial3D_35478")
+mesh = SubResource("CapsuleMesh_dqkpi")
+surface_material_override/0 = SubResource("StandardMaterial3D_036b0")
+
+[node name="Torso" type="MeshInstance3D" parent="mesh/MeshInstance3D" unique_id=1070090858]
+transform = Transform3D(0.23410282, 0, 0, 0, 0.7047244, 0, 0, 0, 0.607927, 0, 0.69154274, 0)
+material_override = SubResource("StandardMaterial3D_jlijj")
+mesh = SubResource("CylinderMesh_dqkpi")
+
+[node name="Neck" type="MeshInstance3D" parent="mesh/MeshInstance3D" unique_id=241619944]
+transform = Transform3D(0.10527029, 0, 0, 0, 0.47849163, 0, 0, 0, 0.21060659, 0, 1.783107, 0)
+material_override = SubResource("StandardMaterial3D_8l18j")
+mesh = SubResource("CapsuleMesh_35478")

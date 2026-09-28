@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://cp36w1u2p3dgk"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_dqkpi"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dwbse"]
+albedo_color = Color(0.1804311, 0.28966776, 0.068704486, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_35478"]
+material = SubResource("StandardMaterial3D_dwbse")
+
+[node name="Flashlight" type="Node3D" unique_id=1723816638]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1576640962]
+transform = Transform3D(1, 0, 0, 0, 1.4551797, 0, 0, 0, 1, 0, -0.45014095, 0)
+mesh = SubResource("CylinderMesh_dqkpi")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="." unique_id=1757527196]
+transform = Transform3D(2.0104737, 0, 0, 0, 0.393363, 0, 0, 0, 1.8382919, 0, 1.3682961, 0)
+mesh = SubResource("CylinderMesh_35478")
