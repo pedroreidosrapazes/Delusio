@@ -171,7 +171,7 @@ shape = SubResource("BoxShape3D_10o8v")
 transform = Transform3D(0.054061517, 0, -2.6394465, 0, 2.64, 0, 2.6394465, 0, 0.054061517, -27.077936, 0.8864269, 41.89888)
 
 [node name="portaEntrada" parent="Casa" index="23" unique_id=1037518465]
-transform = Transform3D(0.2784921, -0.0012873852, -0.010494494, 0.0012550552, 0.27868843, -0.0008820444, 0.01049841, 0.00083414867, 0.27849367, 0.116831005, 0.61433506, -2.101365)
+transform = Transform3D(0.2784921, -0.0012873851, -0.010494494, 0.0012550552, 0.2786884, -0.0008820444, 0.01049841, 0.0008341486, 0.27849367, 0.116831005, 0.61433506, -2.101365)
 
 [node name="StaticBody3D" parent="Casa/portaEntrada" index="0" unique_id=2146175246 node_paths=PackedStringArray("animation_player")]
 script = ExtResource("14_70uel")
@@ -181,6 +181,17 @@ animation_player = NodePath("../../AnimationPlayer")
 transform = Transform3D(1.0398722, -4.656613e-10, -2.9802322e-08, -9.313226e-10, 1.0071133, 1.3387762e-09, 0, 2.5465852e-10, 4.3466763, 0, 0, 0)
 
 [node name="portaEntrada_001" parent="Casa" index="24" unique_id=1271892101]
-transform = Transform3D(-0.27868608, 0.0012504566, -0.0014496038, 0.001255055, 0.2786885, -0.0008820444, 0.0014456239, -0.00088855164, -0.27868757, -1.3062297, 0.61433506, 0.616614)
+transform = Transform3D(-0.27868605, 0.0012504566, -0.0014496038, 0.0012550548, 0.2786885, -0.0008820444, 0.0014456238, -0.00088855164, -0.27868757, -1.3062297, 0.61433506, 0.616614)
+
+[node name="StaticBody3D" parent="Casa/portaEntrada_001" index="0" unique_id=826512533]
+script = ExtResource("14_70uel")
+abrirPortaEntrada = "abrirPortaBanheiro"
+fecharPortaEntrada = "fecharPortaBanheiro"
+
+[node name="StaticBody3D" parent="Casa/portaQuarto" parent_id_path=PackedInt32Array(807175730, 754297391) index="0" unique_id=781697425 node_paths=PackedStringArray("animation_player")]
+script = ExtResource("14_70uel")
+animation_player = NodePath("../../AnimationPlayer")
+abrirPortaEntrada = "abrirPortaQuarto"
+fecharPortaEntrada = "fehcarPortaQuarto"
 
 [editable path="Casa"]
