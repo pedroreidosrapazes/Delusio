@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://c1t2yjkshpslc"]
+
+[ext_resource type="PackedScene" uid="uid://cqb8fcn1hybm6" path="res://casa/Casa (4).blend" id="1_427ab"]
+
+[node name="Casa (4)" unique_id=807175730 instance=ExtResource("1_427ab")]
+
+[node name="portaEntrada" parent="." index="23" unique_id=1037518465]
+transform = Transform3D(0.2784921, -0.0012873854, -0.010494494, 0.0012550552, 0.27868846, -0.0008820444, 0.01049841, 0.0008341488, 0.27849367, 0.116831005, 0.61433506, -2.101365)
+
+[node name="portaEntrada_001" parent="." index="24" unique_id=1271892101]
+transform = Transform3D(-0.2786861, 0.0012504566, -0.0014496038, 0.0012550551, 0.2786885, -0.0008820444, 0.001445624, -0.00088855164, -0.27868757, -1.3062297, 0.61433506, 0.616614)
+
+[node name="portaQuarto" parent="." index="25" unique_id=754297391]
+transform = Transform3D(0.03244378, -0.0010186497, -0.2746445, 0.0017206746, 0.28808108, -0.0008723881, 0.38070244, -0.0012152402, 0.023409376, 1.8462961, 0.6398597, 0.47468278)

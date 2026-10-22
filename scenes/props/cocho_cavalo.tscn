@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://qah00iibmsof"]
+
+[ext_resource type="Script" uid="uid://cvqclkomfkjoi" path="res://scripts/interactables/cocho_cavalo.gd" id="1_cocho"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_dqkpi"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dqkpi"]
+
+[node name="cochoCavalo" type="Node3D" unique_id=67964313]
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1571326991]
+script = ExtResource("1_cocho")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=1420976140]
+mesh = SubResource("BoxMesh_dqkpi")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1571733309]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1.062311, 0, 0, 0)
+shape = SubResource("BoxShape3D_dqkpi")

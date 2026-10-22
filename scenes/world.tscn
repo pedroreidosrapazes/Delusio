@@ -1,0 +1,186 @@
+[gd_scene format=3 uid="uid://d1w4eaceb4srs"]
+
+[ext_resource type="PackedScene" uid="uid://dcuv8tlymi3j3" path="res://Cenario_ideia (1).blend" id="1_f3sb7"]
+[ext_resource type="Script" uid="uid://cuqsqvr3m8xxl" path="res://scripts/player/player.gd" id="1_fj7yv"]
+[ext_resource type="Script" uid="uid://bd8lmgl3kv0nw" path="res://scripts/core/game_manager.gd" id="1_gbfbk"]
+[ext_resource type="PackedScene" uid="uid://cp36w1u2p3dgk" path="res://scenes/props/flashlight.tscn" id="2_036b0"]
+[ext_resource type="PackedScene" uid="uid://qovali6bqyg" path="res://scenes/monsters/shilhueta.tscn" id="3_tlwt5"]
+[ext_resource type="Script" uid="uid://c02d3gemekp3" path="res://scripts/environment/world_environment.gd" id="4_dwbse"]
+[ext_resource type="Script" uid="uid://cnds3oq3xfmy8" path="res://scripts/core/gerenciador_de_tarefas.gd" id="8_gbfbk"]
+[ext_resource type="Script" uid="uid://qwyb626oa7bp" path="res://scripts/interactables/tarefa_interativa.gd" id="8_ioo17"]
+[ext_resource type="Script" uid="uid://wa27lagnc7gq" path="res://scripts/ui/hud.gd" id="9_wse8f"]
+[ext_resource type="Script" uid="uid://b8bl7iu6dxe53" path="res://scripts/interactables/cama.gd" id="10_wse8f"]
+[ext_resource type="Script" uid="uid://c2by72c8r2ch0" path="res://scripts/interactables/radio.gd" id="11_ic0uy"]
+[ext_resource type="AudioStream" uid="uid://dekepy3f7ttpv" path="res://assets/audio/radio_noticia_dia1.mp3" id="12_k3n1d"]
+[ext_resource type="PackedScene" uid="uid://c1t2yjkshpslc" path="res://scenes/props/casa.tscn" id="13_2o6r5"]
+[ext_resource type="Script" uid="uid://bggil4lfkfi4p" path="res://scripts/interactables/porta_entrada.gd" id="14_70uel"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.45
+height = 1.8
+
+[sub_resource type="Environment" id="Environment_pkg7o"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_35478"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_o8fc1"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_qafjs"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_q8dgc"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_pkwtx"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_qafjs"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_q8dgc"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pkwtx"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_10o8v"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_10o8v"]
+
+[node name="World" type="Node3D" unique_id=1853283299]
+
+[node name="GameManager" type="Node" parent="." unique_id=901289966 node_paths=PackedStringArray("label_tarefas", "silhueta", "camera_player", "environment_noite", "radio")]
+script = ExtResource("1_gbfbk")
+label_tarefas = NodePath("../Hud/LabelTarefas")
+silhueta = NodePath("../shilhueta")
+camera_player = NodePath("../CharacterBody3D/Camera3D")
+environment_noite = NodePath("../WorldEnvironment")
+radio = NodePath("../Radio")
+
+[node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1632349647 node_paths=PackedStringArray("reticula") groups=["player"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.812635, 2.1676755, 54.226)
+script = ExtResource("1_fj7yv")
+reticula = NodePath("../Hud/ColorRect")
+
+[node name="Camera3D" type="Camera3D" parent="CharacterBody3D" unique_id=191087586]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+
+[node name="Flashlight" parent="CharacterBody3D/Camera3D" unique_id=1723816638 instance=ExtResource("2_036b0")]
+transform = Transform3D(0.12, 0, 0, 0, 0.12, 0, 0, 0, 0.12, 0.35, -0.28, -0.4)
+
+[node name="SpotLight3D" type="SpotLight3D" parent="CharacterBody3D/Camera3D/Flashlight" unique_id=1410599914]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
+light_energy = 4.0
+spot_range = 25.0
+
+[node name="RayCast3D" type="RayCast3D" parent="CharacterBody3D/Camera3D" unique_id=43761709]
+target_position = Vector3(0, 0, -2.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D" unique_id=1673459786]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="Cenario_ideia (1)" parent="." unique_id=744459673 instance=ExtResource("1_f3sb7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5705948, 0)
+
+[node name="shilhueta" parent="." unique_id=272194737 node_paths=PackedStringArray("camera") instance=ExtResource("3_tlwt5")]
+transform = Transform3D(1.4772635, 0, 0, 0, 2.2648096, 0, 0, 0, 1.8086593, 4.901308, 10.263115, 70.305115)
+camera = NodePath("../CharacterBody3D/Camera3D")
+look_threshold = 0.69
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=971834523]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.32431, 53.419754, 58.1848)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=390710854 node_paths=PackedStringArray("directional_light")]
+environment = SubResource("Environment_pkg7o")
+script = ExtResource("4_dwbse")
+directional_light = NodePath("../DirectionalLight3D")
+
+[node name="GerenciadorDeTarefas" type="Node" parent="." unique_id=12861713]
+script = ExtResource("8_gbfbk")
+
+[node name="Hud" type="CanvasLayer" parent="." unique_id=840357297]
+script = ExtResource("9_wse8f")
+
+[node name="LabelTarefas" type="Label" parent="Hud" unique_id=1870540463]
+offset_left = 51.0
+offset_top = 44.0
+offset_right = 375.0
+offset_bottom = 105.0
+text = "Tarefas 1/3"
+
+[node name="ColorRect" type="ColorRect" parent="Hud" unique_id=2026806296]
+offset_left = 572.0
+offset_top = 304.99997
+offset_right = 612.0
+offset_bottom = 344.99997
+scale = Vector2(0.13650861, 0.08885167)
+
+[node name="Objetos_Tarefas" type="Node" parent="." unique_id=2147302751]
+
+[node name="Planta1" type="StaticBody3D" parent="Objetos_Tarefas" unique_id=633897167]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2504334, 25.911661)
+script = ExtResource("8_ioo17")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Objetos_Tarefas/Planta1" unique_id=520151159]
+mesh = SubResource("BoxMesh_35478")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Objetos_Tarefas/Planta1" unique_id=1225728386]
+shape = SubResource("BoxShape3D_o8fc1")
+
+[node name="Planta2" type="StaticBody3D" parent="Objetos_Tarefas" unique_id=1967735177]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.830813, 1.1929765, 27.062807)
+script = ExtResource("8_ioo17")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Objetos_Tarefas/Planta2" unique_id=1845598355]
+mesh = SubResource("BoxMesh_qafjs")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Objetos_Tarefas/Planta2" unique_id=1323857019]
+shape = SubResource("BoxShape3D_q8dgc")
+
+[node name="Planta3" type="StaticBody3D" parent="Objetos_Tarefas" unique_id=1309885534]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.4133544, 2.4016228, 26.824848)
+script = ExtResource("8_ioo17")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Objetos_Tarefas/Planta3" unique_id=1662743357]
+mesh = SubResource("BoxMesh_pkwtx")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Objetos_Tarefas/Planta3" unique_id=309460102]
+shape = SubResource("BoxShape3D_qafjs")
+
+[node name="Cama" type="StaticBody3D" parent="." unique_id=1389219562]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 3.9726126, 11.40659, -0.5353513, 25.878302)
+script = ExtResource("10_wse8f")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Cama" unique_id=1497986715]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 2.5363357, 0)
+mesh = SubResource("BoxMesh_q8dgc")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Cama" unique_id=404561543]
+transform = Transform3D(0.9999998, 0, 0, 0, 0.9999998, 0, 0, 0, 0.9999998, 0, 2.542135, 0)
+shape = SubResource("BoxShape3D_pkwtx")
+
+[node name="Radio" type="StaticBody3D" parent="." unique_id=1328975022]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1889315, 1.9238143, 24.227898)
+script = ExtResource("11_ic0uy")
+audios_dias = Array[AudioStream]([ExtResource("12_k3n1d")])
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Radio" unique_id=1240572078]
+mesh = SubResource("BoxMesh_10o8v")
+
+[node name="AudioPlayer" type="AudioStreamPlayer3D" parent="Radio" unique_id=127428055]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Radio" unique_id=315010900]
+shape = SubResource("BoxShape3D_10o8v")
+
+[node name="Casa" parent="." unique_id=807175730 instance=ExtResource("13_2o6r5")]
+transform = Transform3D(0.054061517, 0, -2.6394465, 0, 2.64, 0, 2.6394465, 0, 0.054061517, -27.077936, 0.8864269, 41.89888)
+
+[node name="portaEntrada" parent="Casa" index="23" unique_id=1037518465]
+transform = Transform3D(0.2784921, -0.0012873852, -0.010494494, 0.0012550552, 0.27868843, -0.0008820444, 0.01049841, 0.00083414867, 0.27849367, 0.116831005, 0.61433506, -2.101365)
+
+[node name="StaticBody3D" parent="Casa/portaEntrada" index="0" unique_id=2146175246 node_paths=PackedStringArray("animation_player")]
+script = ExtResource("14_70uel")
+animation_player = NodePath("../../AnimationPlayer")
+
+[node name="CollisionShape3D" parent="Casa/portaEntrada/StaticBody3D" index="0" unique_id=1610999327]
+transform = Transform3D(1.0398722, -4.656613e-10, -2.9802322e-08, -9.313226e-10, 1.0071133, 1.3387762e-09, 0, 2.5465852e-10, 4.3466763, 0, 0, 0)
+
+[node name="portaEntrada_001" parent="Casa" index="24" unique_id=1271892101]
+transform = Transform3D(-0.27868608, 0.0012504566, -0.0014496038, 0.001255055, 0.2786885, -0.0008820444, 0.0014456239, -0.00088855164, -0.27868757, -1.3062297, 0.61433506, 0.616614)
+
+[editable path="Casa"]
