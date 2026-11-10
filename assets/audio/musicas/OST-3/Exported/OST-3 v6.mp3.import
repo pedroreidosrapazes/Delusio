@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://ctc567lqn0chu"
+path="res://.godot/imported/OST-3 v6.mp3-d5caa3699a402cf4bcb1cd21d7c60962.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/musicas/OST-3/Exported/OST-3 v6.mp3"
+dest_files=["res://.godot/imported/OST-3 v6.mp3-d5caa3699a402cf4bcb1cd21d7c60962.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

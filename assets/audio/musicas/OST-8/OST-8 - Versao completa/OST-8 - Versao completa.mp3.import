@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://h1h28jpqr484"
+path="res://.godot/imported/OST-8 - Versao completa.mp3-20b1a86ffa82a933fde8ab7a6b4c8be5.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/musicas/OST-8/OST-8 - Versao completa/OST-8 - Versao completa.mp3"
+dest_files=["res://.godot/imported/OST-8 - Versao completa.mp3-20b1a86ffa82a933fde8ab7a6b4c8be5.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
