@@ -28,12 +28,13 @@ func _ready() -> void:
 		_sincronizar_hotbar()
 
 func _criar_hotbar() -> void:
-	_barra = Control.new()
+	_barra = MarginContainer.new()
 	_barra.name = "Hotbar"
 	_barra.anchor_left = 0.5
 	_barra.anchor_right = 0.5
 	_barra.anchor_top = 1.0
 	_barra.anchor_bottom = 1.0
+	_barra.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_barra.offset_left = -266.0
 	_barra.offset_right = 266.0
 	_barra.offset_top = -116.0
@@ -44,7 +45,6 @@ func _criar_hotbar() -> void:
 
 	var linha := HBoxContainer.new()
 	linha.name = "Slots"
-	linha.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	linha.add_theme_constant_override("separation", 8)
 	linha.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_barra.add_child(linha)
