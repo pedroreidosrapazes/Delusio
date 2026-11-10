@@ -90,8 +90,9 @@ directional_light = NodePath("../DirectionalLight3D")
 [node name="GerenciadorDeTarefas" type="Node" parent="." unique_id=12861713]
 script = ExtResource("8_gbfbk")
 
-[node name="Hud" type="CanvasLayer" parent="." unique_id=840357297]
+[node name="Hud" type="CanvasLayer" parent="." unique_id=840357297 node_paths=PackedStringArray("player")]
 script = ExtResource("9_wse8f")
+player = NodePath("../CharacterBody3D")
 
 [node name="LabelTarefas" type="Label" parent="Hud" unique_id=1870540463]
 offset_left = 51.0
