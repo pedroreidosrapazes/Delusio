@@ -18,6 +18,7 @@ func _ready() -> void:
 
 	_sincronizar_portas()
 	_sincronizar_radio()
+	_sincronizar_cama()
 
 func _sincronizar_portas() -> void:
 	if animation_player == null:
@@ -94,3 +95,24 @@ func _sincronizar_radio() -> void:
 	# Vincula ao GameManager caso esteja vazio
 	if GameManager.instance != null and GameManager.instance.radio == null:
 		GameManager.instance.radio = corpo_radio
+
+func _sincronizar_cama() -> void:
+	var no_cama: Node3D = find_child("cama", true, false) as Node3D
+	if no_cama == null:
+		return
+
+	var corpo_cama: StaticBody3D = null
+	for filho in no_cama.get_children():
+		if filho is StaticBody3D:
+			corpo_cama = filho
+			break
+
+	if corpo_cama == null:
+		return
+
+	var script_cama: Script = load("res://scripts/interactables/cama.gd")
+	if corpo_cama.get_script() != script_cama:
+		corpo_cama.set_script(script_cama)
+
+	corpo_cama.set("prompt_interacao", "Dormir")
+	corpo_cama.set("interacao_ativa", true)

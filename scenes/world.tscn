@@ -9,7 +9,6 @@
 [ext_resource type="Script" uid="uid://cnds3oq3xfmy8" path="res://scripts/core/gerenciador_de_tarefas.gd" id="8_gbfbk"]
 [ext_resource type="Script" uid="uid://qwyb626oa7bp" path="res://scripts/interactables/tarefa_interativa.gd" id="8_ioo17"]
 [ext_resource type="Script" uid="uid://wa27lagnc7gq" path="res://scripts/ui/hud.gd" id="9_wse8f"]
-[ext_resource type="Script" uid="uid://b8bl7iu6dxe53" path="res://scripts/interactables/cama.gd" id="10_wse8f"]
 [ext_resource type="PackedScene" uid="uid://cq0vevrdh55bm" path="res://casa/Casa _final-col.glb" id="12_q5onr"]
 [ext_resource type="PackedScene" uid="uid://pausamenu001" path="res://scenes/menu_pausa.tscn" id="15_xo05s"]
 [ext_resource type="Script" uid="uid://cy7h84l71d5kc" path="res://scripts/environment/casa_controlador.gd" id="16_casa"]
@@ -31,10 +30,6 @@ height = 1.8
 [sub_resource type="BoxMesh" id="BoxMesh_pkwtx"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_qafjs"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_q8dgc"]
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_pkwtx"]
 
 [node name="World" type="Node3D" unique_id=1853283299]
 
@@ -58,7 +53,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 transform = Transform3D(0.07640508, 0, 0, 0, -0.024335511, 0.09480204, 0, -0.12224713, -0.018872067, 0.35000038, -0.27999997, -0.40000153)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="CharacterBody3D/Camera3D/Flashlight" unique_id=1410599914]
-transform = Transform3D(8.333334, 0, 0, 0, 4.682825, -6.893156, 0, 6.893156, 4.682825, 0, 0, -1.0000038)
+transform = Transform3D(13.088136, 0, 0, 0, 2.1927445, -7.7172613, 0, 9.951402, 2.8275423, 0, 3.0517578e-05, -1)
 light_energy = 4.0
 spot_range = 25.0
 
@@ -137,18 +132,6 @@ mesh = SubResource("BoxMesh_pkwtx")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Objetos_Tarefas/Planta3" unique_id=309460102]
 shape = SubResource("BoxShape3D_qafjs")
-
-[node name="Cama" type="StaticBody3D" parent="." unique_id=1389219562]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 3.9726126, 11.40659, -0.5353513, 25.878302)
-script = ExtResource("10_wse8f")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Cama" unique_id=1497986715]
-transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 2.5363357, 0)
-mesh = SubResource("BoxMesh_q8dgc")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Cama" unique_id=404561543]
-transform = Transform3D(0.9999998, 0, 0, 0, 0.9999998, 0, 0, 0, 0.9999998, 0, 2.542135, 0)
-shape = SubResource("BoxShape3D_pkwtx")
 
 [node name="CanvasLayer_Pausa" parent="." unique_id=888752077 instance=ExtResource("15_xo05s")]
 
