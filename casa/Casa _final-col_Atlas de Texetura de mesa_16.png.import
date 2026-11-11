@@ -2,20 +2,24 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://crbholqqc6xua"
-path="res://.godot/imported/IMG-20260908-WA0007.jpg-10c6764159adf4d32046c42599d16cc2.ctex"
+uid="uid://w0qwhf03v3as"
+path.s3tc="res://.godot/imported/Casa _final-col_Atlas de Texetura de mesa_16.png-e937f5d139f762b64aad20cd655a967b.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
+}
+generator_parameters={
+"md5": "b061706dcc3f003fc0876fa4a8485f5a"
 }
 
 [deps]
 
-source_file="res://casa/textures/IMG-20260908-WA0007.jpg"
-dest_files=["res://.godot/imported/IMG-20260908-WA0007.jpg-10c6764159adf4d32046c42599d16cc2.ctex"]
+source_file="res://casa/Casa _final-col_Atlas de Texetura de mesa_16.png"
+dest_files=["res://.godot/imported/Casa _final-col_Atlas de Texetura de mesa_16.png-e937f5d139f762b64aad20cd655a967b.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -23,7 +27,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -37,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

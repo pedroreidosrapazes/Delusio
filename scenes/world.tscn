@@ -10,11 +10,9 @@
 [ext_resource type="Script" uid="uid://qwyb626oa7bp" path="res://scripts/interactables/tarefa_interativa.gd" id="8_ioo17"]
 [ext_resource type="Script" uid="uid://wa27lagnc7gq" path="res://scripts/ui/hud.gd" id="9_wse8f"]
 [ext_resource type="Script" uid="uid://b8bl7iu6dxe53" path="res://scripts/interactables/cama.gd" id="10_wse8f"]
-[ext_resource type="Script" uid="uid://c2by72c8r2ch0" path="res://scripts/interactables/radio.gd" id="11_ic0uy"]
-[ext_resource type="AudioStream" uid="uid://dekepy3f7ttpv" path="res://assets/audio/radio_noticia_dia1.mp3" id="12_k3n1d"]
-[ext_resource type="PackedScene" uid="uid://c1t2yjkshpslc" path="res://scenes/props/casa.tscn" id="13_2o6r5"]
-[ext_resource type="Script" uid="uid://bggil4lfkfi4p" path="res://scripts/interactables/porta_entrada.gd" id="14_70uel"]
+[ext_resource type="PackedScene" uid="uid://cq0vevrdh55bm" path="res://casa/Casa _final-col.glb" id="12_q5onr"]
 [ext_resource type="PackedScene" uid="uid://pausamenu001" path="res://scenes/menu_pausa.tscn" id="15_xo05s"]
+[ext_resource type="Script" uid="uid://cy7h84l71d5kc" path="res://scripts/environment/casa_controlador.gd" id="16_casa"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.45
@@ -46,7 +44,7 @@ label_tarefas = NodePath("../Hud/LabelTarefas")
 silhueta = NodePath("../shilhueta")
 camera_player = NodePath("../CharacterBody3D/Camera3D")
 environment_noite = NodePath("../WorldEnvironment")
-radio = NodePath("../Casa/radio/StaticBody3D")
+radio = NodePath("../Casa _final-col/radio/StaticBody3D")
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1632349647 node_paths=PackedStringArray("reticula") groups=["player"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.812635, 2.1676755, 54.226)
@@ -151,38 +149,8 @@ mesh = SubResource("BoxMesh_q8dgc")
 transform = Transform3D(0.9999998, 0, 0, 0, 0.9999998, 0, 0, 0, 0.9999998, 0, 2.542135, 0)
 shape = SubResource("BoxShape3D_pkwtx")
 
-[node name="Casa" parent="." unique_id=807175730 instance=ExtResource("13_2o6r5")]
-transform = Transform3D(0.054061517, 0, -2.6394465, 0, 2.64, 0, 2.6394465, 0, 0.054061517, -27.077936, 0.8864269, 41.89888)
-
-[node name="portaEntrada" parent="Casa" index="23" unique_id=1037518465]
-transform = Transform3D(0.2784921, -0.0012873851, -0.010494494, 0.0012550552, 0.2786884, -0.0008820444, 0.01049841, 0.0008341486, 0.27849367, 0.116831005, 0.61433506, -2.101365)
-
-[node name="StaticBody3D" parent="Casa/portaEntrada" index="0" unique_id=2146175246 node_paths=PackedStringArray("animation_player")]
-script = ExtResource("14_70uel")
-animation_player = NodePath("../../AnimationPlayer")
-
-[node name="CollisionShape3D" parent="Casa/portaEntrada/StaticBody3D" index="0" unique_id=1610999327]
-transform = Transform3D(1.0398722, -4.656613e-10, -2.9802322e-08, -9.313226e-10, 1.0071133, 1.3387762e-09, 0, 2.5465852e-10, 4.3466763, 0, 0, 0)
-
-[node name="portaEntrada_001" parent="Casa" index="24" unique_id=1271892101]
-transform = Transform3D(-0.27868605, 0.0012504566, -0.0014496038, 0.0012550548, 0.2786885, -0.0008820444, 0.0014456238, -0.00088855164, -0.27868757, -1.3062297, 0.61433506, 0.616614)
-
-[node name="StaticBody3D" parent="Casa/portaEntrada_001" index="0" unique_id=826512533]
-script = ExtResource("14_70uel")
-abrirPortaEntrada = "abrirPortaBanheiro"
-fecharPortaEntrada = "fecharPortaBanheiro"
-
-[node name="StaticBody3D" parent="Casa/portaQuarto" parent_id_path=PackedInt32Array(807175730, 754297391) index="0" unique_id=781697425 node_paths=PackedStringArray("animation_player")]
-script = ExtResource("14_70uel")
-animation_player = NodePath("../../AnimationPlayer")
-abrirPortaEntrada = "abrirPortaQuarto"
-fecharPortaEntrada = "fehcarPortaQuarto"
-
-[node name="StaticBody3D" parent="Casa/radio" parent_id_path=PackedInt32Array(807175730, 1202595209) index="0" unique_id=1695106780 node_paths=PackedStringArray("audio_player")]
-script = ExtResource("11_ic0uy")
-audio_player = NodePath("")
-audios_dias = Array[AudioStream]([ExtResource("12_k3n1d")])
-
 [node name="CanvasLayer_Pausa" parent="." unique_id=888752077 instance=ExtResource("15_xo05s")]
 
-[editable path="Casa"]
+[node name="Casa _final-col" parent="." unique_id=245600819 instance=ExtResource("12_q5onr")]
+transform = Transform3D(0.14276285, 1.2747479e-09, -1.8194076, -0.03850324, 1.8245914, -0.0030212197, 1.819, 0.038621593, 0.14273088, -19.17308, 0.6936162, 33.199738)
+script = ExtResource("16_casa")

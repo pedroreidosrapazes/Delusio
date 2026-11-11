@@ -1,5 +1,5 @@
 class_name Interactable
-extends CollisionObject3D
+extends StaticBody3D
 
 ## Classe base para todos os objetos interativos do jogo (Portas, Rádio, Cama, Tarefas).
 signal interagiu(jogador: Node3D)

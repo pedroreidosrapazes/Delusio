@@ -2,20 +2,24 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cs0xb0kqonoe5"
-path="res://.godot/imported/TLBD - API WEB.png-27b18048b426151626657b4c6ee533b5.ctex"
+uid="uid://b2cccypw6jj0e"
+path.s3tc="res://.godot/imported/Casa _final-col_Atlas UV de Banheiro Pixelado Retro_12.png-cc6b21f90a220b22dbcb62c67db018b1.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
+}
+generator_parameters={
+"md5": "83091acf361fb403d27ffad67d9ff04c"
 }
 
 [deps]
 
-source_file="res://casa/textures/TLBD - API WEB.png"
-dest_files=["res://.godot/imported/TLBD - API WEB.png-27b18048b426151626657b4c6ee533b5.ctex"]
+source_file="res://casa/Casa _final-col_Atlas UV de Banheiro Pixelado Retro_12.png"
+dest_files=["res://.godot/imported/Casa _final-col_Atlas UV de Banheiro Pixelado Retro_12.png-cc6b21f90a220b22dbcb62c67db018b1.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -23,7 +27,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -37,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

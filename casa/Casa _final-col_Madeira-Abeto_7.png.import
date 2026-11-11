@@ -2,20 +2,24 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://drbb5d85hks4d"
-path="res://.godot/imported/Madeira Branca.jpg-7f91bf6eb36e5bfc07af171aeef965c7.ctex"
+uid="uid://coyc0lejmyjha"
+path.s3tc="res://.godot/imported/Casa _final-col_Madeira-Abeto_7.png-ddebec3f41414013cb8ff03dc3a0d365.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
+}
+generator_parameters={
+"md5": "c9162f5f5b016c2872af0605b414725b"
 }
 
 [deps]
 
-source_file="res://casa/textures/Madeira Branca.jpg"
-dest_files=["res://.godot/imported/Madeira Branca.jpg-7f91bf6eb36e5bfc07af171aeef965c7.ctex"]
+source_file="res://casa/Casa _final-col_Madeira-Abeto_7.png"
+dest_files=["res://.godot/imported/Casa _final-col_Madeira-Abeto_7.png-ddebec3f41414013cb8ff03dc3a0d365.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -23,7 +27,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -37,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

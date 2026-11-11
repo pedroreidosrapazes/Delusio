@@ -2,20 +2,24 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cw81f53tualpo"
-path="res://.godot/imported/Atlas de Textura de Livro_2.png-50b06b936ec25880c477cb8943b1c39b.ctex"
+uid="uid://b0gfq8vqwm61x"
+path.s3tc="res://.godot/imported/Casa _final-col_Atlas de Texturas de Tapetes Vintage.png-edfa73e6bdc8d9325d132428c485e63f.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
+}
+generator_parameters={
+"md5": "1efd259a455bd3b94f094f1fc5547fdc"
 }
 
 [deps]
 
-source_file="res://casa/textures/Atlas de Textura de Livro_2.png"
-dest_files=["res://.godot/imported/Atlas de Textura de Livro_2.png-50b06b936ec25880c477cb8943b1c39b.ctex"]
+source_file="res://casa/Casa _final-col_Atlas de Texturas de Tapetes Vintage.png"
+dest_files=["res://.godot/imported/Casa _final-col_Atlas de Texturas de Tapetes Vintage.png-edfa73e6bdc8d9325d132428c485e63f.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -23,7 +27,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -37,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
