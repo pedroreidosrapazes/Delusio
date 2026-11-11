@@ -2,14 +2,11 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dyjhb2ntdxmog"
+uid="uid://bfq8ffh86l7a5"
 path.s3tc="res://.godot/imported/Casa _final-col_Madeira Branca.jpg-c0f1d243f496941ad4bcf3b85831958c.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
-}
-generator_parameters={
-"md5": "bc9972d7292581273f8f0852b924b936"
 }
 
 [deps]

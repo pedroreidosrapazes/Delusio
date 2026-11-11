@@ -2,14 +2,11 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cutrvdx40vf4p"
+uid="uid://cyuxti3gppr3g"
 path.s3tc="res://.godot/imported/Casa _final-col_Ferro.jpg-611d0a1c2a1c1f9046ea9de36d430422.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
-}
-generator_parameters={
-"md5": "1e5a071c58c28871e1dc2a2964a39e68"
 }
 
 [deps]

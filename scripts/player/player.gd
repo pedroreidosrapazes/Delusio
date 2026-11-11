@@ -3,6 +3,28 @@ extends CharacterBody3D
 
 ## Controlador de Jogador em Primeira Pessoa.
 
+signal hotbar_alterada()
+signal hotbar_selecionada(indice: int)
+
+const HOTBAR_SLOTS: int = 6
+const MAX_POR_ITEM: int = 50
+
+var indice_slot_selecionado: int:
+	get:
+		return _indice_slot_selecionado
+
+var _indice_slot_selecionado: int = 0
+var _slots_hotbar: Array[Dictionary] = [
+	{"id": &"lanterna", "quantidade": 1},
+	{"id": &"", "quantidade": 0},
+	{"id": &"", "quantidade": 0},
+	{"id": &"", "quantidade": 0},
+	{"id": &"", "quantidade": 0},
+	{"id": &"", "quantidade": 0},
+]
+var _lanterna_equipada: bool = true
+var _luz_lanterna_acesa: bool = true
+
 @export_category("Movimentação")
 @export var velocidade_andar: float = 3.5
 @export var velocidade_correr: float = 5.5
@@ -24,6 +46,7 @@ var rotacao_x_camera: float = 0.0
 @onready var camera: Camera3D = $Camera3D
 @onready var raycast: RayCast3D = $Camera3D/RayCast3D
 @onready var lanterna: Node3D = $Camera3D/Flashlight
+@onready var luz_lanterna: SpotLight3D = get_node_or_null("Camera3D/Flashlight/SpotLight3D") as SpotLight3D
 
 var tempo_balanco: float = 0.0
 var posicao_original_camera: Vector3
@@ -33,8 +56,13 @@ func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	if camera:
 		posicao_original_camera = camera.transform.origin
+	_atualizar_aparencia_lanterna()
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Teclas repetidas não devem alternar nem selecionar novamente a hotbar.
+	if event is InputEventKey and event.echo:
+		return
+
 	# Controle de rotação da câmera pelo mouse
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * sensibilidade_mouse)
@@ -58,9 +86,69 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("flashlight"):
 		alternar_lanterna()
 
+	# Seleção dos seis espaços da hotbar.
+	for indice in range(HOTBAR_SLOTS):
+		var acao := "hotbar_%d" % (indice + 1)
+		if InputMap.has_action(acao) and event.is_action_pressed(acao):
+			selecionar_slot(indice)
+			break
+
 func alternar_lanterna() -> void:
+	if not _lanterna_equipada:
+		return
+	_luz_lanterna_acesa = not _luz_lanterna_acesa
+	_atualizar_aparencia_lanterna()
+
+
+func obter_slot(indice: int) -> Dictionary:
+	if indice < 0 or indice >= HOTBAR_SLOTS:
+		return {"id": &"", "quantidade": 0}
+	return _slots_hotbar[indice].duplicate()
+
+
+func selecionar_slot(indice: int) -> void:
+	if indice < 0 or indice >= HOTBAR_SLOTS:
+		return
+	_indice_slot_selecionado = indice
+	_lanterna_equipada = _slots_hotbar[indice]["id"] == &"lanterna"
+	_atualizar_aparencia_lanterna()
+	hotbar_selecionada.emit(indice)
+
+
+func adicionar_item(id: StringName, quantidade: int) -> int:
+	if quantidade <= 0:
+		return 0
+	if id == &"":
+		return quantidade
+
+	var alvo := -1
+	for indice in range(HOTBAR_SLOTS):
+		if _slots_hotbar[indice]["id"] == id:
+			alvo = indice
+			break
+	if alvo == -1:
+		for indice in range(HOTBAR_SLOTS):
+			if _slots_hotbar[indice]["id"] == &"":
+				alvo = indice
+				break
+	if alvo == -1:
+		return quantidade
+
+	var disponivel := MAX_POR_ITEM - int(_slots_hotbar[alvo]["quantidade"])
+	var adicionado: int = mini(quantidade, disponivel)
+	if adicionado <= 0:
+		return quantidade
+	_slots_hotbar[alvo]["id"] = id
+	_slots_hotbar[alvo]["quantidade"] = int(_slots_hotbar[alvo]["quantidade"]) + adicionado
+	hotbar_alterada.emit()
+	return quantidade - adicionado
+
+
+func _atualizar_aparencia_lanterna() -> void:
 	if lanterna:
-		lanterna.visible = not lanterna.visible
+		lanterna.visible = _lanterna_equipada
+	if luz_lanterna:
+		luz_lanterna.visible = _lanterna_equipada and _luz_lanterna_acesa
 
 func tentar_interagir() -> void:
 	if raycast == null:

@@ -2,14 +2,11 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://3dm31rplo03l"
+uid="uid://bxamvpib1kke4"
 path.s3tc="res://.godot/imported/Casa _final-col_TLBD - API WEB.png-f193bca4f712a4e8edb796ab3c09cdee.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
-}
-generator_parameters={
-"md5": "e85c8e7993edba4c30277aa05ce3f3c8"
 }
 
 [deps]
