@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://b8ubk5slffeke"]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="AudioStream" path="res://assets/audio/musicas/OST-3/Exported/OST-3 v6.mp3" id="2_musica_menu"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_box"]
 bg_color = Color(0.0470588, 0.0470588, 0.054902, 1)
@@ -13,6 +14,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
+
+[node name="MusicaMenu" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_musica_menu")
+autoplay = true
 
 [node name="Background" type="Panel" parent="."]
 layout_mode = 1
