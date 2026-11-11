@@ -14,6 +14,7 @@
 [ext_resource type="AudioStream" uid="uid://dekepy3f7ttpv" path="res://assets/audio/radio_noticia_dia1.mp3" id="12_k3n1d"]
 [ext_resource type="PackedScene" uid="uid://c1t2yjkshpslc" path="res://scenes/props/casa.tscn" id="13_2o6r5"]
 [ext_resource type="Script" uid="uid://bggil4lfkfi4p" path="res://scripts/interactables/porta_entrada.gd" id="14_70uel"]
+[ext_resource type="PackedScene" uid="uid://pausamenu001" path="res://scenes/menu_pausa.tscn" id="15_xo05s"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.45
@@ -37,10 +38,6 @@ height = 1.8
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_pkwtx"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_10o8v"]
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_10o8v"]
-
 [node name="World" type="Node3D" unique_id=1853283299]
 
 [node name="GameManager" type="Node" parent="." unique_id=901289966 node_paths=PackedStringArray("label_tarefas", "silhueta", "camera_player", "environment_noite", "radio")]
@@ -49,7 +46,7 @@ label_tarefas = NodePath("../Hud/LabelTarefas")
 silhueta = NodePath("../shilhueta")
 camera_player = NodePath("../CharacterBody3D/Camera3D")
 environment_noite = NodePath("../WorldEnvironment")
-radio = NodePath("../Radio")
+radio = NodePath("../Casa/radio/StaticBody3D")
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1632349647 node_paths=PackedStringArray("reticula") groups=["player"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.812635, 2.1676755, 54.226)
@@ -60,10 +57,10 @@ reticula = NodePath("../Hud/ColorRect")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 
 [node name="Flashlight" parent="CharacterBody3D/Camera3D" unique_id=1723816638 instance=ExtResource("2_036b0")]
-transform = Transform3D(0.12, 0, 0, 0, 0.12, 0, 0, 0, 0.12, 0.35, -0.28, -0.4)
+transform = Transform3D(0.07640508, 0, 0, 0, -0.024335511, 0.09480204, 0, -0.12224713, -0.018872067, 0.35000038, -0.27999997, -0.40000153)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="CharacterBody3D/Camera3D/Flashlight" unique_id=1410599914]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
+transform = Transform3D(8.333334, 0, 0, 0, 4.682825, -6.893156, 0, 6.893156, 4.682825, 0, 0, -1.0000038)
 light_energy = 4.0
 spot_range = 25.0
 
@@ -154,19 +151,6 @@ mesh = SubResource("BoxMesh_q8dgc")
 transform = Transform3D(0.9999998, 0, 0, 0, 0.9999998, 0, 0, 0, 0.9999998, 0, 2.542135, 0)
 shape = SubResource("BoxShape3D_pkwtx")
 
-[node name="Radio" type="StaticBody3D" parent="." unique_id=1328975022]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1889315, 1.9238143, 24.227898)
-script = ExtResource("11_ic0uy")
-audios_dias = Array[AudioStream]([ExtResource("12_k3n1d")])
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Radio" unique_id=1240572078]
-mesh = SubResource("BoxMesh_10o8v")
-
-[node name="AudioPlayer" type="AudioStreamPlayer3D" parent="Radio" unique_id=127428055]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Radio" unique_id=315010900]
-shape = SubResource("BoxShape3D_10o8v")
-
 [node name="Casa" parent="." unique_id=807175730 instance=ExtResource("13_2o6r5")]
 transform = Transform3D(0.054061517, 0, -2.6394465, 0, 2.64, 0, 2.6394465, 0, 0.054061517, -27.077936, 0.8864269, 41.89888)
 
@@ -193,5 +177,12 @@ script = ExtResource("14_70uel")
 animation_player = NodePath("../../AnimationPlayer")
 abrirPortaEntrada = "abrirPortaQuarto"
 fecharPortaEntrada = "fehcarPortaQuarto"
+
+[node name="StaticBody3D" parent="Casa/radio" parent_id_path=PackedInt32Array(807175730, 1202595209) index="0" unique_id=1695106780 node_paths=PackedStringArray("audio_player")]
+script = ExtResource("11_ic0uy")
+audio_player = NodePath("")
+audios_dias = Array[AudioStream]([ExtResource("12_k3n1d")])
+
+[node name="CanvasLayer_Pausa" parent="." unique_id=888752077 instance=ExtResource("15_xo05s")]
 
 [editable path="Casa"]

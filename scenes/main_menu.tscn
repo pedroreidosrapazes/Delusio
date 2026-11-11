@@ -1,0 +1,217 @@
+[gd_scene format=3 uid="uid://b8ubk5slffeke"]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_box"]
+bg_color = Color(0.0470588, 0.0470588, 0.054902, 1)
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="MenuPrincipal" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 80
+theme_override_constants/margin_top = 60
+theme_override_constants/margin_right = 80
+theme_override_constants/margin_bottom = 60
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MenuPrincipal"]
+layout_mode = 2
+alignment = 1
+
+[node name="Titulo" type="Label" parent="MenuPrincipal/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.92, 0.92, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_y = 3
+theme_override_font_sizes/font_size = 64
+text = "DELUSIO"
+horizontal_alignment = 1
+
+[node name="Subtitulo" type="Label" parent="MenuPrincipal/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.45, 0.48, 1)
+theme_override_font_sizes/font_size = 14
+text = "A  S O M B R A  D A  M E N T E"
+horizontal_alignment = 1
+
+[node name="Espacador" type="Control" parent="MenuPrincipal/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+
+[node name="BotoesContainer" type="VBoxContainer" parent="MenuPrincipal/VBoxContainer"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 12
+
+[node name="BotaoJogar" type="Button" parent="MenuPrincipal/VBoxContainer/BotoesContainer"]
+custom_minimum_size = Vector2(240, 42)
+layout_mode = 2
+focus_neighbor_top = NodePath("../BotaoSair")
+focus_neighbor_bottom = NodePath("../BotaoConfiguracoes")
+text = "JOGAR"
+
+[node name="BotaoConfiguracoes" type="Button" parent="MenuPrincipal/VBoxContainer/BotoesContainer"]
+custom_minimum_size = Vector2(240, 42)
+layout_mode = 2
+focus_neighbor_top = NodePath("../BotaoJogar")
+focus_neighbor_bottom = NodePath("../BotaoSair")
+text = "CONFIGURAÇÕES"
+
+[node name="BotaoSair" type="Button" parent="MenuPrincipal/VBoxContainer/BotoesContainer"]
+custom_minimum_size = Vector2(240, 42)
+layout_mode = 2
+focus_neighbor_top = NodePath("../BotaoConfiguracoes")
+focus_neighbor_bottom = NodePath("../BotaoJogar")
+text = "SAIR"
+
+[node name="EspacadorRodape" type="Control" parent="MenuPrincipal/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="VersaoLabel" type="Label" parent="MenuPrincipal/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.28, 0.3, 1)
+theme_override_font_sizes/font_size = 12
+text = "Delusio Alpha Build"
+horizontal_alignment = 1
+
+[node name="MenuConfiguracoes" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 120
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 120
+theme_override_constants/margin_bottom = 50
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MenuConfiguracoes"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+alignment = 1
+
+[node name="TituloConfig" type="Label" parent="MenuConfiguracoes/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.88, 0.88, 1)
+theme_override_font_sizes/font_size = 32
+text = "CONFIGURAÇÕES"
+horizontal_alignment = 1
+
+[node name="HSeparatorTitulo" type="HSeparator" parent="MenuConfiguracoes/VBoxContainer"]
+layout_mode = 2
+
+[node name="EspacadorTopo" type="Control" parent="MenuConfiguracoes/VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
+[node name="PainelConfig" type="VBoxContainer" parent="MenuConfiguracoes/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="SecaoAudio" type="VBoxContainer" parent="MenuConfiguracoes/VBoxContainer/PainelConfig"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="AudioLabel" type="Label" parent="MenuConfiguracoes/VBoxContainer/PainelConfig/SecaoAudio"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+text = "Volume Geral: 100%"
+
+[node name="AudioSlider" type="HSlider" parent="MenuConfiguracoes/VBoxContainer/PainelConfig/SecaoAudio"]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="HSeparator1" type="HSeparator" parent="MenuConfiguracoes/VBoxContainer/PainelConfig"]
+layout_mode = 2
+
+[node name="SecaoTela" type="VBoxContainer" parent="MenuConfiguracoes/VBoxContainer/PainelConfig"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SecaoTelaLabel" type="Label" parent="MenuConfiguracoes/VBoxContainer/PainelConfig/SecaoTela"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 13
+text = "VÍDEO E EXIBIÇÃO"
+
+[node name="TelaCheiaCheckBox" type="CheckBox" parent="MenuConfiguracoes/VBoxContainer/PainelConfig/SecaoTela"]
+layout_mode = 2
+text = "Tela Cheia (Fullscreen)"
+
+[node name="VSyncCheckBox" type="CheckBox" parent="MenuConfiguracoes/VBoxContainer/PainelConfig/SecaoTela"]
+layout_mode = 2
+text = "Sincronização Vertical (V-Sync)"
+
+[node name="HSeparator2" type="HSeparator" parent="MenuConfiguracoes/VBoxContainer/PainelConfig"]
+layout_mode = 2
+
+[node name="SecaoBrilho" type="VBoxContainer" parent="MenuConfiguracoes/VBoxContainer/PainelConfig"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="BrilhoLabel" type="Label" parent="MenuConfiguracoes/VBoxContainer/PainelConfig/SecaoBrilho"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+text = "Gama / Brilho: 1.00"
+
+[node name="BrilhoSlider" type="HSlider" parent="MenuConfiguracoes/VBoxContainer/PainelConfig/SecaoBrilho"]
+layout_mode = 2
+min_value = 0.5
+max_value = 1.5
+step = 0.05
+value = 1.0
+
+[node name="CalibragemDica" type="Label" parent="MenuConfiguracoes/VBoxContainer/PainelConfig/SecaoBrilho"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.45, 0.48, 1)
+theme_override_font_sizes/font_size = 11
+text = "Calibração de Terror: Ajuste o brilho até que o fundo permaneça sutilmente escuro."
+autowrap_mode = 2
+
+[node name="EspacadorConfig" type="Control" parent="MenuConfiguracoes/VBoxContainer"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="BotaoVoltar" type="Button" parent="MenuConfiguracoes/VBoxContainer"]
+custom_minimum_size = Vector2(200, 38)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "VOLTAR"
+
+[node name="BrilhoOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

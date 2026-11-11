@@ -10,16 +10,39 @@ extends Interactable
 @export var audios_dias: Array[AudioStream]
 
 func _ready() -> void:
+	add_to_group("radio")
 	prompt_interacao = "Desligar Rádio"
+	_garantir_audio_player()
+
+func _garantir_audio_player() -> void:
+	if audio_player != null:
+		return
+	
+	# 1. Tenta encontrar por nomes comuns
+	audio_player = get_node_or_null("AudioStreamPlayer3D") as AudioStreamPlayer3D
 	if audio_player == null:
 		audio_player = get_node_or_null("AudioPlayer") as AudioStreamPlayer3D
+	
+	# 2. Busca qualquer AudioStreamPlayer3D existente nos nós filhos
+	if audio_player == null:
+		for filho in get_children():
+			if filho is AudioStreamPlayer3D:
+				audio_player = filho
+				break
+				
+	# 3. Fallback: cria dinamicamente se não existir
+	if audio_player == null:
+		audio_player = AudioStreamPlayer3D.new()
+		audio_player.name = "AudioStreamPlayer3D"
+		audio_player.bus = &"Master"
+		audio_player.max_distance = 25.0
+		add_child(audio_player)
 
 func tocar_noticia(dia: int) -> void:
-	if audio_player == null:
-		audio_player = get_node_or_null("AudioPlayer") as AudioStreamPlayer3D
+	_garantir_audio_player()
 		
 	if audio_player == null:
-		print("ERRO no Rádio: Nenhum nó AudioStreamPlayer3D foi encontrado como filho do Rádio!")
+		print("ERRO no Rádio: Nenhum nó AudioStreamPlayer3D disponível!")
 		return
 
 	var indice = dia - 1

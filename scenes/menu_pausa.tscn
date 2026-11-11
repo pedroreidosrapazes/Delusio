@@ -1,0 +1,141 @@
+[gd_scene format=3 uid="uid://pausamenu001"]
+
+[ext_resource type="Script" path="res://scripts/ui/menu_pausa.gd" id="1_pausa"]
+
+[node name="CanvasLayer_Pausa" type="CanvasLayer"]
+process_mode = 3
+layer = 100
+
+[node name="MenuPausa" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_pausa")
+
+[node name="FundoEscuro" type="ColorRect" parent="MenuPausa"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="PainelPausa" type="VBoxContainer" parent="MenuPausa"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -120.0
+offset_right = 140.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="TituloPausa" type="Label" parent="MenuPausa/PainelPausa"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "PAUSA"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MenuPausa/PainelPausa"]
+layout_mode = 2
+
+[node name="BotaoContinuar" type="Button" parent="MenuPausa/PainelPausa"]
+custom_minimum_size = Vector2(280, 42)
+layout_mode = 2
+text = "Continuar"
+
+[node name="BotaoConfiguracoes" type="Button" parent="MenuPausa/PainelPausa"]
+custom_minimum_size = Vector2(280, 42)
+layout_mode = 2
+text = "Configurações"
+
+[node name="BotaoMenuPrincipal" type="Button" parent="MenuPausa/PainelPausa"]
+custom_minimum_size = Vector2(280, 42)
+layout_mode = 2
+text = "Menu Principal"
+
+[node name="PainelConfiguracoes" type="VBoxContainer" parent="MenuPausa"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -140.0
+offset_right = 200.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="TituloConfig" type="Label" parent="MenuPausa/PainelConfiguracoes"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "CONFIGURAÇÕES"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MenuPausa/PainelConfiguracoes"]
+layout_mode = 2
+
+[node name="SecaoAudio" type="HBoxContainer" parent="MenuPausa/PainelConfiguracoes"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LabelAudio" type="Label" parent="MenuPausa/PainelConfiguracoes/SecaoAudio"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "Volume Geral"
+
+[node name="SliderAudio" type="HSlider" parent="MenuPausa/PainelConfiguracoes/SecaoAudio"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+step = 1.0
+value = 100.0
+
+[node name="SecaoTela" type="HBoxContainer" parent="MenuPausa/PainelConfiguracoes"]
+layout_mode = 2
+
+[node name="CheckTelaCheia" type="CheckBox" parent="MenuPausa/PainelConfiguracoes/SecaoTela"]
+layout_mode = 2
+text = "Tela Cheia"
+
+[node name="SecaoBrilho" type="HBoxContainer" parent="MenuPausa/PainelConfiguracoes"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LabelBrilho" type="Label" parent="MenuPausa/PainelConfiguracoes/SecaoBrilho"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "Brilho"
+
+[node name="SliderBrilho" type="HSlider" parent="MenuPausa/PainelConfiguracoes/SecaoBrilho"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 0.5
+max_value = 1.5
+step = 0.05
+value = 1.0
+
+[node name="HSeparator2" type="HSeparator" parent="MenuPausa/PainelConfiguracoes"]
+layout_mode = 2
+
+[node name="BotaoVoltarPausa" type="Button" parent="MenuPausa/PainelConfiguracoes"]
+custom_minimum_size = Vector2(200, 38)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Voltar"
