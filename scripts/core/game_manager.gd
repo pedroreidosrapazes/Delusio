@@ -54,7 +54,34 @@ func _ready() -> void:
 		gerenciador_medicamentos.name = "GerenciadorMedicamentos"
 		add_child(gerenciador_medicamentos)
 
+	_garantir_esconderijo_cena()
 	iniciar_novo_dia()
+
+
+func _garantir_esconderijo_cena() -> void:
+	if get_tree() == null or not get_tree().get_nodes_in_group("esconderijos").is_empty():
+		return
+	var esc := Esconderijo.new()
+	esc.name = "Esconderijo Fazenda"
+	esc.nome_esconderijo = "Abrigo de Madeira"
+	esc.position = Vector3(2.5, 1.1, 26.5)
+
+	var mesh_inst := MeshInstance3D.new()
+	var box_mesh := BoxMesh.new()
+	box_mesh.size = Vector3(1.4, 2.2, 1.4)
+	mesh_inst.mesh = box_mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.28, 0.20, 0.14)
+	mesh_inst.material_override = mat
+	esc.add_child(mesh_inst)
+
+	var col := CollisionShape3D.new()
+	var box_shape := BoxShape3D.new()
+	box_shape.size = Vector3(1.4, 2.2, 1.4)
+	col.shape = box_shape
+	esc.add_child(col)
+
+	get_parent().call_deferred("add_child", esc)
 
 
 func processar_tempo_dia(delta: float) -> void:

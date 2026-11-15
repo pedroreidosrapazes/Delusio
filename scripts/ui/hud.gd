@@ -35,8 +35,11 @@ func _ready() -> void:
 		GameManager.instance.tarefas_atualizadas.connect(_on_tarefas_atualizadas)
 		GameManager.instance.status_temporario.connect(_on_status_temporario)
 		GameManager.instance.horario_alterado.connect(_on_horario_alterado)
+		GameManager.instance.dia_iniciado.connect(_on_dia_iniciado)
 		if _filtro_delusio:
 			_filtro_delusio.definir_estado_horario(GameManager.instance.horario_atual, true)
+		if DisplayServer.get_name() != "headless":
+			call_deferred("abrir_menu_medicamentos")
 
 	_criar_painel_sequencia()
 	_criar_prompt_interacao()
@@ -356,3 +359,22 @@ func _on_tarefas_atualizadas(_concluidas: int, _totais: int, mensagem: String) -
 func _on_status_temporario(mensagem: String) -> void:
 	if label_tarefas:
 		label_tarefas.text = mensagem
+
+
+func _on_dia_iniciado(_dia: int) -> void:
+	if DisplayServer.get_name() != "headless":
+		abrir_menu_medicamentos()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_P:
+			if menu_medicamentos and menu_medicamentos.visible:
+				menu_medicamentos.fechar()
+			else:
+				abrir_menu_medicamentos()
+		elif event.keycode == KEY_N and GameManager.instance:
+			if GameManager.instance.horario_atual != 2:
+				GameManager.instance.iniciar_evento_terror()
+			else:
+				GameManager.instance.iniciar_novo_dia()

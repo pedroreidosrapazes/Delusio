@@ -182,12 +182,14 @@ func _configurar_cenario_3d(viewport: SubViewport) -> Node3D:
 	viewport.add_child(pivo)
 
 	# Tenta carregar modelo da Placa de Petri
-	var modelo_petri: Node = null
+	var modelo_petri: Node3D = null
 	if ResourceLoader.exists(CENA_PLACA_PETRI):
 		var cena_placa := load(CENA_PLACA_PETRI) as PackedScene
 		if cena_placa != null:
-			modelo_petri = cena_placa.instantiate()
-			pivo.add_child(modelo_petri)
+			modelo_petri = cena_placa.instantiate() as Node3D
+			if modelo_petri != null:
+				_normalizar_escala_modelo(modelo_petri, 1.55)
+				pivo.add_child(modelo_petri)
 
 	if modelo_petri == null:
 		var mesh_inst := MeshInstance3D.new()
@@ -203,7 +205,7 @@ func _configurar_cenario_3d(viewport: SubViewport) -> Node3D:
 		mesh_inst.material_override = mat
 		pivo.add_child(mesh_inst)
 
-	# Colisão da base para que os RigidBodies não caiam
+	# Colisão da base e bordas cilíndricas para conter os RigidBodies dentro do vidro
 	var base_corpo := StaticBody3D.new()
 	var base_col := CollisionShape3D.new()
 	var shape_cil := CylinderShape3D.new()
@@ -212,9 +214,34 @@ func _configurar_cenario_3d(viewport: SubViewport) -> Node3D:
 	base_col.shape = shape_cil
 	base_col.position.y = -0.05
 	base_corpo.add_child(base_col)
+
+	var num_paredes := 12
+	var raio_borda := 0.78
+	for i in range(num_paredes):
+		var ang := (TAU / float(num_paredes)) * float(i)
+		var parede_col := CollisionShape3D.new()
+		var parede_box := BoxShape3D.new()
+		parede_box.size = Vector3(0.48, 0.45, 0.08)
+		parede_col.shape = parede_box
+		parede_col.position = Vector3(cos(ang) * raio_borda, 0.18, sin(ang) * raio_borda)
+		parede_col.rotation.y = -ang + PI * 0.5
+		base_corpo.add_child(parede_col)
+
 	pivo.add_child(base_corpo)
 
 	return pivo
+
+
+func _normalizar_escala_modelo(no_raiz: Node3D, diametro_alvo: float) -> void:
+	var maior_extensao := 0.0
+	for filho in no_raiz.find_children("*", "MeshInstance3D", true, false):
+		if filho is MeshInstance3D and (filho as MeshInstance3D).mesh != null:
+			var aabb := (filho as MeshInstance3D).get_aabb()
+			var tam := aabb.size * (filho as Node3D).scale
+			maior_extensao = maxf(maior_extensao, maxf(tam.x, maxf(tam.y, tam.z)))
+	if maior_extensao > 0.0001:
+		var fator := diametro_alvo / maior_extensao
+		no_raiz.scale = Vector3.ONE * fator
 
 
 func _limpar_pilulas_pivo(pivo: Node3D, lista_rb: Array[RigidBody3D]) -> void:
@@ -244,13 +271,15 @@ func _criar_pilula_3d(id: StringName, pos_local: Vector3) -> RigidBody3D:
 	col.shape = box
 	rb.add_child(col)
 
-	var modelo_inst: Node = null
+	var modelo_inst: Node3D = null
 	var caminho_modelo: String = dados.get("modelo", "")
 	if caminho_modelo != "" and ResourceLoader.exists(caminho_modelo):
 		var packed := load(caminho_modelo) as PackedScene
 		if packed != null:
-			modelo_inst = packed.instantiate()
-			rb.add_child(modelo_inst)
+			modelo_inst = packed.instantiate() as Node3D
+			if modelo_inst != null:
+				_normalizar_escala_modelo(modelo_inst, 0.34)
+				rb.add_child(modelo_inst)
 
 	if modelo_inst == null:
 		var fallback_mesh := MeshInstance3D.new()
