@@ -5,6 +5,7 @@ extends CanvasLayer
 
 const CENA_LANTERNA: PackedScene = preload("res://scenes/props/flashlight.tscn")
 const FILTRO_DELUSIO_CONTROLADOR := preload("res://scripts/visual/filtro_delusio_controlador.gd")
+const MENU_ESCOLHA_MEDICAMENTOS := preload("res://scripts/ui/menu_escolha_medicamentos.gd")
 
 @onready var label_tarefas: Label = $LabelTarefas
 @onready var reticula: ColorRect = $ColorRect
@@ -22,12 +23,14 @@ var _painel_sequencia: PainelSequenciaInteracao
 var _filtro_delusio: FiltroDelusioControlador
 var _label_prompt_interacao: Label
 var _alvo_focado_atual: Interactable = null
+var menu_medicamentos: MenuEscolhaMedicamentos = null
 
 
 func _ready() -> void:
 	layer = 1
 
 	_criar_filtro_delusio()
+	_criar_menu_medicamentos()
 	if GameManager.instance:
 		GameManager.instance.tarefas_atualizadas.connect(_on_tarefas_atualizadas)
 		GameManager.instance.status_temporario.connect(_on_status_temporario)
@@ -57,6 +60,31 @@ func obter_painel_sequencia() -> PainelSequenciaInteracao:
 
 func obter_filtro_delusio() -> FiltroDelusioControlador:
 	return _filtro_delusio
+
+
+func obter_menu_medicamentos() -> MenuEscolhaMedicamentos:
+	return menu_medicamentos
+
+
+func _criar_menu_medicamentos() -> void:
+	if menu_medicamentos != null:
+		return
+	menu_medicamentos = MENU_ESCOLHA_MEDICAMENTOS.new()
+	menu_medicamentos.name = "MenuEscolhaMedicamentos"
+	menu_medicamentos.filtro_delusio = _filtro_delusio
+	if GameManager.instance:
+		menu_medicamentos.gerenciador = GameManager.instance.gerenciador_medicamentos
+	add_child(menu_medicamentos)
+
+
+func abrir_menu_medicamentos(vidros: Dictionary = {}) -> void:
+	if menu_medicamentos == null:
+		_criar_menu_medicamentos()
+	if menu_medicamentos != null:
+		menu_medicamentos.filtro_delusio = _filtro_delusio
+		if GameManager.instance and menu_medicamentos.gerenciador == null:
+			menu_medicamentos.gerenciador = GameManager.instance.gerenciador_medicamentos
+		menu_medicamentos.abrir(vidros)
 
 
 func _criar_filtro_delusio() -> void:

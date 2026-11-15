@@ -7,9 +7,11 @@ const SHADER_FILTRO := preload("res://shaders/post_process/filtro_delusio.gdshad
 
 var nivel_tensao_atual: float = 0.05
 var peso_noite_atual: float = 0.0
+var desfoque_fundo_atual: float = 0.0
 
 var _tensao_base_horario: float = 0.05
 var _peso_noite_alvo: float = 0.0
+var _desfoque_fundo_alvo: float = 0.0
 var _impulso_tensao: float = 0.0
 var _niveis_cor_alvo: float = 32.0
 
@@ -48,6 +50,13 @@ func registrar_impulso_tensao(valor: float = 0.42) -> void:
 	_impulso_tensao = clampf(_impulso_tensao + valor, 0.0, 0.65)
 	nivel_tensao_atual = clampf(_tensao_base_horario + _impulso_tensao + calcular_tensao_silhueta(), 0.0, 1.0)
 	_atualizar_uniformes_shader()
+
+
+func definir_desfoque_fundo(valor: float, imediato: bool = false) -> void:
+	_desfoque_fundo_alvo = clampf(valor, 0.0, 1.0)
+	if imediato:
+		desfoque_fundo_atual = _desfoque_fundo_alvo
+		_atualizar_uniformes_shader()
 
 
 func definir_estado_horario(estado: int, imediato: bool = true) -> void:
@@ -99,6 +108,7 @@ func _process(delta: float) -> void:
 	var tensao_alvo := clampf(_tensao_base_horario + _impulso_tensao + tensao_silhueta, 0.0, 1.0)
 	nivel_tensao_atual = move_toward(nivel_tensao_atual, tensao_alvo, delta * 1.5)
 	peso_noite_atual = move_toward(peso_noite_atual, _peso_noite_alvo, delta * 0.8)
+	desfoque_fundo_atual = move_toward(desfoque_fundo_atual, _desfoque_fundo_alvo, delta * 3.5)
 	_atualizar_uniformes_shader()
 
 
@@ -108,3 +118,4 @@ func _atualizar_uniformes_shader() -> void:
 	_material_filtro.set_shader_parameter("nivel_tensao", nivel_tensao_atual)
 	_material_filtro.set_shader_parameter("peso_noite", peso_noite_atual)
 	_material_filtro.set_shader_parameter("niveis_cor", _niveis_cor_alvo)
+	_material_filtro.set_shader_parameter("desfoque_fundo", desfoque_fundo_atual)

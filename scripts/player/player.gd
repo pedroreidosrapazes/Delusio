@@ -58,7 +58,7 @@ var _rotacao_y_olhar_tras: float = 0.0
 @onready var lanterna: Node3D = $Camera3D/Flashlight
 @onready var luz_lanterna: SpotLight3D = get_node_or_null("Camera3D/Flashlight/SpotLight3D") as SpotLight3D
 
-const COR_LANTERNA_PADRAO := Color("#ffe0a3")
+const COR_LANTERNA_PADRAO := Color("#ffe3a8")
 var _energia_base_lanterna: float = 4.0
 
 var tempo_balanco: float = 0.0
@@ -67,6 +67,7 @@ var posicao_original_camera: Vector3
 var _desafio_sequencia: SequenciaDirecionalDesafio = SequenciaDirecionalDesafio.new()
 var _interacao_ativa_alvo: Interactable = null
 var _interagivel_focado: Interactable = null
+var esconderijo_atual: Node = null
 
 
 func _ready() -> void:
@@ -74,6 +75,8 @@ func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	if camera:
 		posicao_original_camera = camera.transform.origin
+	if luz_lanterna:
+		luz_lanterna.light_color = COR_LANTERNA_PADRAO
 	_atualizar_aparencia_lanterna()
 
 	_desafio_sequencia.sequencia_iniciada.connect(
@@ -124,6 +127,11 @@ func cancelar_interacao_sequencia() -> void:
 func submeter_direcao_sequencia(dir: int) -> String:
 	if not esta_em_interacao_sequencia():
 		return "inativo"
+	var gerente := GameManager.instance
+	if gerente != null and gerente.horario_atual == 2:
+		if _interacao_ativa_alvo != null and ("exigir_lanterna_a_noite" in _interacao_ativa_alvo) and _interacao_ativa_alvo.exigir_lanterna_a_noite:
+			if not esta_com_lanterna_acesa():
+				return "escuro"
 	return _desafio_sequencia.submeter_direcao(dir)
 
 
@@ -169,6 +177,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+	# Se estiver escondido, sair com tecla de interação ou pulo/cancelar
+	if esta_escondido():
+		if event.is_action_pressed("interact") or event.is_action_pressed("ui_cancel") or (InputMap.has_action("jump") and event.is_action_pressed("jump")):
+			if esconderijo_atual != null and esconderijo_atual.has_method("sair"):
+				esconderijo_atual.sair(self)
+			else:
+				sair_esconderijo()
+			get_viewport().set_input_as_handled()
+			return
 
 	# Se estiver no desafio de sequência direcional
 	if esta_em_interacao_sequencia():
@@ -230,6 +248,23 @@ func alternar_lanterna() -> void:
 	_atualizar_aparencia_lanterna()
 
 
+func esta_com_lanterna_acesa() -> bool:
+	return _lanterna_equipada and _luz_lanterna_acesa
+
+
+func entrar_esconderijo(esconderijo: Node) -> void:
+	esconderijo_atual = esconderijo
+	velocity = Vector3.ZERO
+
+
+func sair_esconderijo() -> void:
+	esconderijo_atual = null
+
+
+func esta_escondido() -> bool:
+	return esconderijo_atual != null
+
+
 func obter_slot(indice: int) -> Dictionary:
 	if indice < 0 or indice >= HOTBAR_SLOTS:
 		return {"id": &"", "quantidade": 0}
@@ -287,8 +322,7 @@ func _atualizar_aparencia_lanterna() -> void:
 func calcular_fator_instabilidade_lanterna(distancia: float) -> float:
 	if distancia >= 26.0:
 		return 1.0
-	var t := clampf(distancia / 26.0, 0.0, 1.0)
-	return clampf(0.35 + 0.65 * t, 0.35, 1.0)
+	return clampf(lerpf(0.35, 1.0, clampf(distancia / 26.0, 0.0, 1.0)), 0.35, 1.0)
 
 
 func _processar_instabilidade_lanterna(_delta: float) -> void:
@@ -409,6 +443,12 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravidade * delta
 
 	if esta_em_interacao_sequencia():
+		velocity.x = move_toward(velocity.x, 0, velocidade_andar)
+		velocity.z = move_toward(velocity.z, 0, velocidade_andar)
+		move_and_slide()
+		return
+
+	if esta_escondido():
 		velocity.x = move_toward(velocity.x, 0, velocidade_andar)
 		velocity.z = move_toward(velocity.z, 0, velocidade_andar)
 		move_and_slide()

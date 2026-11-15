@@ -11,11 +11,25 @@ signal tarefas_atualizadas(concluidas: int, totais: int, mensagem: String)
 signal status_temporario(mensagem: String)
 signal horario_alterado(estado: int)
 
+enum ModoNoturno { NENHUM = 0, VIGILIA_DOMESTICA = 1, TAREFAS_PENDENTES = 2 }
+var modo_noturno: int = ModoNoturno.NENHUM
+
 @export_category("Configurações do Dia")
 @export var dia_atual: int = 1
 @export var tarefas_totais: int = 3
+@export var duracao_dia_segundos: float = 180.0
+
 var tarefas_concluidas: int = 0
 var horario_atual: int = 0
+var tempo_dia_restante: float = 180.0
+
+const GERENCIADOR_MEDICAMENTOS := preload("res://scripts/core/gerenciador_medicamentos.gd")
+
+var pontos_vigilia_ativos: bool = false
+var recargas_luz_disponiveis: int = 2
+var rastros_investigativos: Array[Node3D] = []
+
+var gerenciador_medicamentos: GerenciadorMedicamentos = null
 
 @export_category("Referências da Cena")
 @export var label_tarefas: Label
@@ -35,12 +49,40 @@ func _exit_tree() -> void:
 
 
 func _ready() -> void:
+	if gerenciador_medicamentos == null:
+		gerenciador_medicamentos = GerenciadorMedicamentos.new()
+		gerenciador_medicamentos.name = "GerenciadorMedicamentos"
+		add_child(gerenciador_medicamentos)
+
 	iniciar_novo_dia()
+
+
+func processar_tempo_dia(delta: float) -> void:
+	if horario_atual == 2:
+		return
+
+	tempo_dia_restante = maxf(0.0, tempo_dia_restante - delta)
+	if tempo_dia_restante <= 0.0 and horario_atual != 2:
+		if tarefas_concluidas < tarefas_totais:
+			modo_noturno = ModoNoturno.TAREFAS_PENDENTES
+			iniciar_evento_terror()
+
+
+func _process(delta: float) -> void:
+	processar_tempo_dia(delta)
 
 
 func iniciar_novo_dia() -> void:
 	tarefas_concluidas = 0
 	horario_atual = 0
+	modo_noturno = ModoNoturno.NENHUM
+	pontos_vigilia_ativos = false
+	_limpar_rastros()
+
+	var mult_t := 0.0
+	if gerenciador_medicamentos != null:
+		mult_t = gerenciador_medicamentos.obter_modificador("mult_tempo_dia", 0.0)
+	tempo_dia_restante = maxf(30.0, duracao_dia_segundos * (1.0 + mult_t))
 
 	# Desativa e esconde a silhueta no começo do dia
 	if silhueta:
@@ -72,6 +114,10 @@ func iniciar_novo_dia() -> void:
 		if "interacao_ativa" in t:
 			t.interacao_ativa = true
 
+	# Se medicamento raro resolver tarefas imediatamente
+	if gerenciador_medicamentos != null and gerenciador_medicamentos.obter_modificador("resolver_dia_imediato", 0.0) > 0.0:
+		tarefas_concluidas = tarefas_totais
+
 	atualizar_hud()
 	print("--- DIA %d INICIADO ---" % dia_atual)
 	dia_iniciado.emit(dia_atual)
@@ -89,6 +135,8 @@ func concluir_tarefa(_id_tarefa: String = "") -> void:
 	atualizar_hud()
 
 	if tarefas_concluidas >= tarefas_totais:
+		if modo_noturno == ModoNoturno.NENHUM:
+			modo_noturno = ModoNoturno.VIGILIA_DOMESTICA
 		iniciar_evento_terror()
 	elif tarefas_totais >= 2 and tarefas_concluidas == tarefas_totais - 1:
 		horario_atual = 1
@@ -110,9 +158,51 @@ func atualizar_hud() -> void:
 	tarefas_atualizadas.emit(tarefas_concluidas, tarefas_totais, msg)
 
 
+func ativar_vigilia_domestica() -> void:
+	pontos_vigilia_ativos = true
+	recargas_luz_disponiveis = 2
+	if gerenciador_medicamentos != null:
+		recargas_luz_disponiveis += int(gerenciador_medicamentos.obter_modificador("recargas_noturnas_extras", 0.0))
+	_gerar_rastros_investigativos()
+
+
+func recarregar_luz_vigilia() -> bool:
+	if not pontos_vigilia_ativos or recargas_luz_disponiveis <= 0:
+		return false
+	recargas_luz_disponiveis -= 1
+	status_temporario.emit("Luz recarregada no ponto de vigília! Restantes: %d" % recargas_luz_disponiveis)
+	return true
+
+
+func _gerar_rastros_investigativos() -> void:
+	_limpar_rastros()
+	for i in range(3):
+		var rastro := Node3D.new()
+		rastro.name = "RastroInvestigativo_%d" % i
+		rastro.add_to_group("rastros_vigilia")
+		add_child(rastro)
+		rastros_investigativos.append(rastro)
+
+
+func _limpar_rastros() -> void:
+	for r in rastros_investigativos:
+		if is_instance_valid(r):
+			r.queue_free()
+	rastros_investigativos.clear()
+
+
 func iniciar_evento_terror() -> void:
 	print("A noite caiu... A silhueta despertou.")
 	horario_atual = 2
+
+	if modo_noturno == ModoNoturno.NENHUM:
+		if tarefas_concluidas >= tarefas_totais:
+			modo_noturno = ModoNoturno.VIGILIA_DOMESTICA
+		else:
+			modo_noturno = ModoNoturno.TAREFAS_PENDENTES
+
+	if modo_noturno == ModoNoturno.VIGILIA_DOMESTICA:
+		ativar_vigilia_domestica()
 
 	# Transiciona a iluminação para NOITE
 	if environment_noite and environment_noite.has_method("mudar_horario"):

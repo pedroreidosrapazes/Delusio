@@ -12,6 +12,7 @@ uniform float intensidade_grao : hint_range(0.0, 0.2) = 0.025;
 uniform float forca_vinheta : hint_range(0.0, 1.5) = 0.42;
 uniform float brilho_local : hint_range(0.5, 1.5) = 1.0;
 uniform vec3 cor_fria_noite : source_color = vec3(0.42, 0.50, 0.62);
+uniform float desfoque_fundo : hint_range(0.0, 1.0) = 0.0;
 
 float obter_bayer4x4(ivec2 pos) {
 	int x = pos.x % 4;
@@ -43,9 +44,33 @@ void fragment() {
 	vec2 uv_g = SCREEN_UV;
 	vec2 uv_b = clamp(SCREEN_UV - dir_radial * fator_aberracao, vec2(0.0), vec2(1.0));
 
-	float r = texture(screen_texture, uv_r).r;
-	float g = texture(screen_texture, uv_g).g;
-	float b = texture(screen_texture, uv_b).b;
+	float r = 0.0;
+	float g = 0.0;
+	float b = 0.0;
+
+	if (desfoque_fundo > 0.001) {
+		float raio = desfoque_fundo * 0.012;
+		const vec2 offsets[9] = vec2[9](
+			vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+			vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+			vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+		);
+		const float pesos[9] = float[9](
+			0.0625, 0.125, 0.0625,
+			0.1250, 0.250, 0.1250,
+			0.0625, 0.125, 0.0625
+		);
+		for (int i = 0; i < 9; i++) {
+			vec2 off = offsets[i] * raio;
+			r += texture(screen_texture, clamp(uv_r + off, vec2(0.0), vec2(1.0))).r * pesos[i];
+			g += texture(screen_texture, clamp(uv_g + off, vec2(0.0), vec2(1.0))).g * pesos[i];
+			b += texture(screen_texture, clamp(uv_b + off, vec2(0.0), vec2(1.0))).b * pesos[i];
+		}
+	} else {
+		r = texture(screen_texture, uv_r).r;
+		g = texture(screen_texture, uv_g).g;
+		b = texture(screen_texture, uv_b).b;
+	}
 	vec3 cor_base = vec3(r, g, b);
 
 	// Dessaturação seletiva ("Mente, Terra e Sangue")
