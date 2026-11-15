@@ -9,9 +9,21 @@ extends Interactable
 
 var concluida: bool = false
 
+
+func _init() -> void:
+	exigir_sequencia_direcional = true
+	tamanho_sequencia = 4
+	tempo_limite_sequencia = 6.0
+
+
+func pode_interagir() -> bool:
+	return super.pode_interagir() and not concluida
+
+
 func _ready() -> void:
 	prompt_interacao = nome_exibicao
 	add_to_group("tarefas")
+
 
 func _executar_interacao(_jogador: Node3D) -> void:
 	if concluida:

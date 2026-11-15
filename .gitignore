@@ -4,3 +4,5 @@
 .backup_delusio_original/
 *.tmp
 *.blend1
+__pycache__/
+*.pyc

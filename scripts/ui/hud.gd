@@ -4,6 +4,7 @@ extends CanvasLayer
 ## Interface do Usuário (HUD).
 
 const CENA_LANTERNA: PackedScene = preload("res://scenes/props/flashlight.tscn")
+const FILTRO_DELUSIO_CONTROLADOR := preload("res://scripts/visual/filtro_delusio_controlador.gd")
 
 @onready var label_tarefas: Label = $LabelTarefas
 @onready var reticula: ColorRect = $ColorRect
@@ -17,15 +18,146 @@ var _viewport_icone: SubViewport
 var _estilo_normal: StyleBoxFlat
 var _estilo_selecionado: StyleBoxFlat
 
+var _painel_sequencia: PainelSequenciaInteracao
+var _filtro_delusio: FiltroDelusioControlador
+var _label_prompt_interacao: Label
+var _alvo_focado_atual: Interactable = null
+
+
 func _ready() -> void:
+	layer = 1
+
+	_criar_filtro_delusio()
 	if GameManager.instance:
 		GameManager.instance.tarefas_atualizadas.connect(_on_tarefas_atualizadas)
 		GameManager.instance.status_temporario.connect(_on_status_temporario)
+		GameManager.instance.horario_alterado.connect(_on_horario_alterado)
+		if _filtro_delusio:
+			_filtro_delusio.definir_estado_horario(GameManager.instance.horario_atual, true)
+
+	_criar_painel_sequencia()
+	_criar_prompt_interacao()
 	_criar_hotbar()
+
 	if player:
 		player.hotbar_alterada.connect(_sincronizar_hotbar)
 		player.hotbar_selecionada.connect(_ao_selecionar_slot)
+		player.interagivel_focado_alterado.connect(_ao_interagivel_focado_alterado)
+		player.sequencia_interacao_iniciada.connect(_ao_sequencia_iniciada)
+		player.sequencia_interacao_passo.connect(_ao_sequencia_passo)
+		player.sequencia_interacao_erro.connect(_ao_sequencia_erro)
+		player.sequencia_interacao_tempo.connect(_ao_sequencia_tempo)
+		player.sequencia_interacao_finalizada.connect(_ao_sequencia_finalizada)
 		_sincronizar_hotbar()
+
+
+func obter_painel_sequencia() -> PainelSequenciaInteracao:
+	return _painel_sequencia
+
+
+func obter_filtro_delusio() -> FiltroDelusioControlador:
+	return _filtro_delusio
+
+
+func _criar_filtro_delusio() -> void:
+	if _filtro_delusio != null:
+		return
+	_filtro_delusio = FILTRO_DELUSIO_CONTROLADOR.new()
+	_filtro_delusio.name = "FiltroDelusio"
+	add_child(_filtro_delusio)
+
+
+func _on_horario_alterado(estado: int) -> void:
+	if _filtro_delusio:
+		_filtro_delusio.definir_estado_horario(estado, false)
+
+
+func _criar_painel_sequencia() -> void:
+	_painel_sequencia = PainelSequenciaInteracao.new()
+	_painel_sequencia.name = "PainelSequenciaInteracao"
+	add_child(_painel_sequencia)
+
+
+func _criar_prompt_interacao() -> void:
+	_label_prompt_interacao = Label.new()
+	_label_prompt_interacao.name = "LabelPromptInteracao"
+	_label_prompt_interacao.anchor_left = 0.5
+	_label_prompt_interacao.anchor_right = 0.5
+	_label_prompt_interacao.anchor_top = 0.5
+	_label_prompt_interacao.anchor_bottom = 0.5
+	_label_prompt_interacao.offset_left = -260.0
+	_label_prompt_interacao.offset_right = 260.0
+	_label_prompt_interacao.offset_top = 28.0
+	_label_prompt_interacao.offset_bottom = 60.0
+	_label_prompt_interacao.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_label_prompt_interacao.add_theme_font_size_override("font_size", 14)
+	_label_prompt_interacao.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.95))
+	_label_prompt_interacao.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	_label_prompt_interacao.add_theme_constant_override("shadow_offset_x", 1)
+	_label_prompt_interacao.add_theme_constant_override("shadow_offset_y", 1)
+	_label_prompt_interacao.visible = false
+	add_child(_label_prompt_interacao)
+
+
+func _ao_interagivel_focado_alterado(alvo: Interactable) -> void:
+	_alvo_focado_atual = alvo
+	_atualizar_prompt_interacao()
+
+
+func _atualizar_prompt_interacao() -> void:
+	if _label_prompt_interacao == null:
+		return
+
+	if _alvo_focado_atual == null or not is_instance_valid(_alvo_focado_atual) or not _alvo_focado_atual.pode_interagir():
+		_label_prompt_interacao.visible = false
+		return
+
+	if player != null and player.esta_em_interacao_sequencia():
+		_label_prompt_interacao.visible = false
+		return
+
+	var prompt := _alvo_focado_atual.prompt_interacao
+	if _alvo_focado_atual.exigir_sequencia_direcional:
+		_label_prompt_interacao.text = "[E] %s (%d setas • %.1fs)" % [
+			prompt,
+			_alvo_focado_atual.tamanho_sequencia,
+			_alvo_focado_atual.tempo_limite_sequencia
+		]
+	else:
+		_label_prompt_interacao.text = "[E] %s" % prompt
+
+	_label_prompt_interacao.visible = true
+
+
+func _ao_sequencia_iniciada(sequencia: Array[int], tempo_limite: float, titulo: String) -> void:
+	if _label_prompt_interacao:
+		_label_prompt_interacao.visible = false
+	if _painel_sequencia:
+		_painel_sequencia.mostrar_sequencia(sequencia, tempo_limite, titulo)
+
+
+func _ao_sequencia_passo(indice: int, total: int) -> void:
+	if _painel_sequencia:
+		_painel_sequencia.atualizar_passo(indice, total)
+
+
+func _ao_sequencia_erro(motivo: String, nova_sequencia: Array[int], tempo_restante: float) -> void:
+	if _painel_sequencia:
+		_painel_sequencia.registrar_erro(motivo, nova_sequencia, tempo_restante)
+	if _filtro_delusio:
+		_filtro_delusio.registrar_impulso_tensao(0.42)
+
+
+func _ao_sequencia_tempo(restante: float, limite: float) -> void:
+	if _painel_sequencia:
+		_painel_sequencia.atualizar_tempo(restante, limite)
+
+
+func _ao_sequencia_finalizada(sucesso: bool) -> void:
+	if _painel_sequencia:
+		_painel_sequencia.finalizar(sucesso)
+	_atualizar_prompt_interacao()
+
 
 func _criar_hotbar() -> void:
 	_barra = MarginContainer.new()
@@ -98,6 +230,7 @@ func _criar_hotbar() -> void:
 	_temporizador.timeout.connect(_ocultar_hotbar)
 	add_child(_temporizador)
 
+
 func _sincronizar_hotbar() -> void:
 	if not player:
 		return
@@ -117,6 +250,7 @@ func _sincronizar_hotbar() -> void:
 			(_slots[indice]["icone"] as TextureRect).texture = null
 	_atualizar_destaque()
 
+
 func _ao_selecionar_slot(indice: int) -> void:
 	if indice < 0 or indice >= Player.HOTBAR_SLOTS:
 		return
@@ -124,10 +258,12 @@ func _ao_selecionar_slot(indice: int) -> void:
 	_barra.show()
 	_temporizador.start()
 
+
 func _atualizar_destaque() -> void:
 	for indice in Player.HOTBAR_SLOTS:
 		var painel: PanelContainer = _slots[indice]["painel"]
 		painel.add_theme_stylebox_override("panel", _estilo_selecionado if indice == player.indice_slot_selecionado else _estilo_normal)
+
 
 func _criar_estilo_slot(selecionado: bool) -> StyleBoxFlat:
 	var estilo := StyleBoxFlat.new()
@@ -142,11 +278,13 @@ func _criar_estilo_slot(selecionado: bool) -> StyleBoxFlat:
 	estilo.content_margin_bottom = 3.0
 	return estilo
 
+
 func _nome_item_legivel(id: StringName) -> String:
 	var nome := str(id).replace("_", " ")
 	if nome.length() > 10:
 		nome = nome.substr(0, 9) + "…"
 	return nome.capitalize()
+
 
 func _preparar_icone_lanterna() -> void:
 	if _viewport_icone:
@@ -177,12 +315,15 @@ func _preparar_icone_lanterna() -> void:
 	camera_icone.look_at(Vector3(0.0, 0.25, 0.0))
 	camera_icone.current = true
 
+
 func _ocultar_hotbar() -> void:
 	_barra.hide()
+
 
 func _on_tarefas_atualizadas(_concluidas: int, _totais: int, mensagem: String) -> void:
 	if label_tarefas:
 		label_tarefas.text = mensagem
+
 
 func _on_status_temporario(mensagem: String) -> void:
 	if label_tarefas:

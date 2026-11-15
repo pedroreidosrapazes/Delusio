@@ -6,9 +6,21 @@ extends Interactable
 @export var id_tarefa: String = "alimentar_gado"
 var ja_usado: bool = false
 
+
+func _init() -> void:
+	exigir_sequencia_direcional = true
+	tamanho_sequencia = 5
+	tempo_limite_sequencia = 5.5
+
+
+func pode_interagir() -> bool:
+	return super.pode_interagir() and not ja_usado
+
+
 func _ready() -> void:
 	prompt_interacao = "Alimentar Animais"
 	add_to_group("tarefas")
+
 
 func _executar_interacao(_jogador: Node3D) -> void:
 	if ja_usado:

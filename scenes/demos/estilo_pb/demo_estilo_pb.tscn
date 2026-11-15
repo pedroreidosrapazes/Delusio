@@ -1,0 +1,31 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/visual/estilo_pb/demo_estilo_pb.gd" id="1_demo"]
+
+[sub_resource type="Environment" id="Environment_demo"]
+background_mode = 1
+background_color = Color(0.015, 0.012, 0.025, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.3, 0.3, 0.38, 1)
+ambient_light_energy = 0.5
+glow_enabled = true
+glow_intensity = 0.75
+glow_strength = 1.0
+glow_bloom = 0.05
+
+[node name="DemoEstiloPB" type="Node3D"]
+script = ExtResource("1_demo")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_demo")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(3.4, 2.8, 4.8)
+rotation = Vector3(-0.38, 0.62, 0)
+current = true
+projection = 1
+size = 2.6
+
+[node name="Luz" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.8, -0.5, 0)
+light_energy = 0.7

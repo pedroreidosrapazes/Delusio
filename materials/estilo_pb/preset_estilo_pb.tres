@@ -1,0 +1,36 @@
+[gd_resource type="ShaderMaterial" load_steps=4 format=3]
+
+[ext_resource type="Shader" path="res://shaders/estilo_pb/material_pb.gdshader" id="1_base"]
+[ext_resource type="Shader" path="res://shaders/estilo_pb/contorno_pb.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+shader = ExtResource("2_outline")
+shader_parameter/cor_contorno = Color(1, 1, 1, 1)
+shader_parameter/espessura_contorno = 0.025
+shader_parameter/intensidade_faixa = 2.5
+shader_parameter/largura_faixa = 0.08
+shader_parameter/velocidade_faixa = 0.45
+shader_parameter/escala_faixa = 1.0
+shader_parameter/intensidade_glow = 1.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_base")
+shader_parameter/tem_textura = false
+shader_parameter/tem_mascara_detalhes = false
+shader_parameter/usar_extracao_automatica = true
+shader_parameter/realcar_areas_claras = false
+shader_parameter/cor_base = Color(1, 1, 1, 1)
+shader_parameter/tamanho_textura = Vector2(512, 512)
+shader_parameter/escala_amostragem = 1.0
+shader_parameter/escala_automatica = true
+shader_parameter/limiar_luminancia = 0.25
+shader_parameter/forca_linhas = 1.0
+shader_parameter/limiar_borda = 0.5
+shader_parameter/contraste_mascara = 1.0
+shader_parameter/alpha_cutout_threshold = 0.5
+shader_parameter/intensidade_rim = 1.0
+shader_parameter/largura_rim = 0.12
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+next_pass = SubResource("ShaderMaterial_outline")
