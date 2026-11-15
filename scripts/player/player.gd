@@ -148,9 +148,25 @@ func _ao_cancelar_sequencia() -> void:
 	sequencia_interacao_finalizada.emit(false)
 
 
+func _deve_manter_cursor_livre() -> bool:
+	var tree := get_tree()
+	if tree == null:
+		return false
+	if tree.paused:
+		return true
+	for node in tree.get_nodes_in_group("modal_cursor_ui"):
+		if node is CanvasItem and (node as CanvasItem).visible:
+			return true
+	return false
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	# Teclas repetidas não devem alternar nem selecionar novamente a hotbar.
 	if event is InputEventKey and event.echo:
+		return
+
+	# Não recapturar mouse ou mover câmera enquanto um menu modal ou pausa estiver aberto.
+	if _deve_manter_cursor_livre():
 		return
 
 	# Olhar para trás instantaneamente enquanto segura o botão.

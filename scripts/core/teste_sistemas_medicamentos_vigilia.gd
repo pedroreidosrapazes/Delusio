@@ -43,10 +43,11 @@ func _executar() -> void:
 	_teste_1_catalogo_medicamentos_sem_numeros()
 	_teste_2_sorteio_vidros_e_escolhas()
 	_teste_3_sistema_high_roller_e_traits()
-	_teste_4_menu_3d_e_blur_filtro(hud)
+	await _teste_4_menu_3d_e_blur_filtro(hud)
 	_teste_5_lanterna_noite_tarefas_e_silhueta(gerente, player, tarefa, silhueta)
 	_teste_6_esconderijo_e_comprometimento(mundo, player)
 	_teste_7_ramificacao_modo_noturno(gerente)
+	await _teste_8_inclinacao_independente_janela_e_cursor_pausa(hud, mundo, player)
 
 	mundo.queue_free()
 
@@ -178,21 +179,46 @@ func _teste_4_menu_3d_e_blur_filtro(hud: HUD) -> void:
 	_verificar(menu.visible, "Menu deve estar visível ao abrir.")
 	_verificar(is_equal_approx(filtro._desfoque_fundo_alvo, 1.0), "Abrir o menu deve definir alvo de desfoque_fundo em 1.0.")
 
-	# Verificação da estrutura 3D dos vidros de Petri
+	# Verificação da estrutura 3D dos vidros de Petri e acrílico translúcido
 	_verificar(menu.pivo_esq != null and menu.pivo_dir != null, "Pivôs dos vidros 3D devem existir.")
 	_verificar(menu.pilulas_rb_esq.size() == 2, "Vidro esquerdo deve ter 2 corpos rígidos de pílulas.")
 	_verificar(menu.pilulas_rb_dir.size() == 2, "Vidro direito deve ter 2 corpos rígidos de pílulas.")
 
-	# Teste de inclinação do mouse acompanhando o pivô
-	menu.atualizar_inclinacao_mouse(Vector2(0.5, -0.4), 0.05)
-	_verificar(absf(menu.pivo_esq.rotation.x) > 0.001 or absf(menu.pivo_esq.rotation.z) > 0.001, "Pivô esquerdo deve inclinar com a movimentação do mouse.")
+	var rb0: RigidBody3D = menu.pilulas_rb_esq[0]
+	_verificar(rb0.get_parent() == menu.subviewport_esq, "Pílula RigidBody3D deve ser irmã do pivô (filha do SubViewport) para física real de rolagem.")
+	_verificar(rb0.continuous_cd and not rb0.can_sleep, "Pílulas devem usar continuous_cd e can_sleep = false para responder à inclinação.")
+
+	var prato_anim := menu.pivo_esq.get_node_or_null("PratoFisico") as AnimatableBody3D
+	_verificar(prato_anim != null and prato_anim.sync_to_physics, "Prato físico deve usar AnimatableBody3D com sync_to_physics = true.")
+
+	var mundo_env := menu.subviewport_esq.get_node_or_null("WorldEnvironmentVidro") as WorldEnvironment
+	_verificar(mundo_env != null and mundo_env.environment != null, "SubViewport deve possuir WorldEnvironment próprio.")
+
+	var malhas_petri := menu.pivo_esq.find_children("*", "MeshInstance3D", true, false)
+	_verificar(malhas_petri.size() > 0, "Deve haver malha da placa de Petri.")
+	if malhas_petri.size() > 0:
+		var mat_over := (malhas_petri[0] as MeshInstance3D).material_override as StandardMaterial3D
+		_verificar(mat_over != null and mat_over.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA, "Placa de Petri deve usar material translúcido (TRANSPARENCY_ALPHA).")
+		if mat_over != null:
+			_verificar(mat_over.roughness <= 0.16 and mat_over.albedo_color.a < 0.5, "Acrílico da placa deve ter roughness baixo (não fosco) e alpha translúcido.")
+
+	# Teste de sinal da inclinação: parte mais baixa do vidro deve acompanhar o cursor
+	menu.pivo_esq.rotation = Vector3.ZERO
+	menu.atualizar_inclinacao_mouse(Vector2(0.8, 0.7), 0.2)
+	_verificar(menu.pivo_esq.rotation.z < -0.01, "Cursor à direita deve abaixar borda direita (rotation.z negativo).")
+	_verificar(menu.pivo_esq.rotation.x > 0.01, "Cursor para baixo deve abaixar borda inferior (rotation.x positivo).")
+
+	menu.pivo_esq.rotation = Vector3.ZERO
+	menu.atualizar_inclinacao_mouse(Vector2(-0.8, -0.7), 0.2)
+	_verificar(menu.pivo_esq.rotation.z > 0.01, "Cursor à esquerda deve abaixar borda esquerda (rotation.z positivo).")
+	_verificar(menu.pivo_esq.rotation.x < -0.01, "Cursor para cima deve abaixar borda superior (rotation.x negativo).")
 
 	# Ao fechar/escolher opção, o blur de fundo deve retornar para 0.0
 	menu.escolher(0)
 	_verificar(not menu.visible, "Menu deve ser ocultado após a escolha.")
 	_verificar(is_equal_approx(filtro._desfoque_fundo_alvo, 0.0), "Após fechar o menu, o alvo de desfoque deve retornar a 0.0.")
 
-	print("OK: Menu 3D, física dos vidros e desfoque de fundo validados.")
+	print("OK: Menu 3D, física dos vidros, material acrílico e desfoque de fundo validados.")
 
 
 func _teste_5_lanterna_noite_tarefas_e_silhueta(gerente: GameManager, player: Player, tarefa: TarefaInterativa, silhueta: Silhueta) -> void:
@@ -302,3 +328,59 @@ func _teste_7_ramificacao_modo_noturno(gerente: GameManager) -> void:
 
 	gerente.iniciar_novo_dia() # Restaura dia
 	print("OK: Ramificação entre Tarefas Pendentes e Vigília Doméstica validada.")
+
+
+func _teste_8_inclinacao_independente_janela_e_cursor_pausa(hud: HUD, mundo: Node3D, player: Player) -> void:
+	print("\n--- [8] Teste de Inclinação Independente, Limites de Janela e Cursor com Menu de Pausa ---")
+	var menu := hud.obter_menu_medicamentos()
+	_verificar(menu != null, "MenuEscolhaMedicamentos deve existir no HUD.")
+	if menu == null:
+		return
+
+	menu.abrir({
+		"esquerda": [&"med_1_oval", &"med_1_pilula"],
+		"direita": [&"med_2_oval", &"med_3_pilula"]
+	})
+	await process_frame
+	await process_frame
+
+	# 1. Independência entre vidro esquerdo e vidro direito
+	var centro_esq := menu.vp_cont_esq.get_global_rect().get_center()
+	menu.pivo_esq.rotation = Vector3.ZERO
+	menu.pivo_dir.rotation = Vector3.ZERO
+	menu.definir_cursor_na_janela(true)
+	menu.atualizar_inclinacao_por_cursor_tela(centro_esq, true, 0.25)
+
+	_verificar(absf(menu.pivo_esq.rotation.z) < 0.02, "Vidro esquerdo com cursor no seu próprio centro deve permanecer quase nivelado.")
+	_verificar(menu.pivo_dir.rotation.z > 0.05, "Vidro direito com cursor à sua esquerda (sobre vidro esq.) deve abaixar sua borda esquerda (rotation.z positivo).")
+	_verificar(absf(menu.pivo_dir.rotation.z - menu.pivo_esq.rotation.z) > 0.05, "Os dois vidros devem girar de forma independente.")
+
+	# 2. Comportamento fora da janela: retornar suavemente ao neutro em vez de inclinar
+	var rot_dir_antes := menu.pivo_dir.rotation.z
+	menu.definir_cursor_na_janela(false)
+	menu.atualizar_inclinacao_por_cursor_tela(centro_esq + Vector2(1800.0, 0.0), false, 0.2)
+	_verificar(absf(menu.pivo_dir.rotation.z) < absf(rot_dir_antes), "Quando cursor sai da janela, vidro deve retornar suavemente ao neutro em vez de inclinar para fora.")
+	menu.definir_cursor_na_janela(true)
+
+	# 3. Bug do cursor ao pausar/retomar com Esc enquanto MenuEscolhaMedicamentos está aberto
+	var pausas := mundo.find_children("*", "MenuPausa", true, false)
+	_verificar(pausas.size() > 0, "MenuPausa deve existir na cena world.tscn.")
+	if pausas.size() > 0:
+		var menu_pausa := pausas[0] as MenuPausa
+		menu_pausa.pausar_jogo()
+		_verificar(paused == true, "Jogo deve entrar em pausa.")
+		menu_pausa.retomar_jogo()
+		_verificar(paused == false, "Jogo deve retomar após fechar pausa.")
+		_verificar(Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE, "Cursor deve permanecer MOUSE_MODE_VISIBLE ao fechar pausa com menu de medicamentos aberto.")
+
+		# Player._unhandled_input não deve recapturar o mouse com clique esquerdo enquanto menu está aberto
+		var ev_clique := InputEventMouseButton.new()
+		ev_clique.button_index = MOUSE_BUTTON_LEFT
+		ev_clique.pressed = true
+		player._unhandled_input(ev_clique)
+		_verificar(Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE, "Player._unhandled_input não deve capturar o mouse enquanto MenuEscolhaMedicamentos está aberto.")
+
+		menu.fechar()
+		_verificar(not menu_pausa._tem_menu_modal_cursor_ativo(), "Sem menu modal visível, MenuPausa deve voltar a capturar o mouse ao retomar.")
+
+	print("OK: Inclinação independente, limite de janela e preservação do cursor após pausa validados.")

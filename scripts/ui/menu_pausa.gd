@@ -101,12 +101,25 @@ func pausar_jogo() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	botao_continuar.grab_focus()
 
+func _tem_menu_modal_cursor_ativo() -> bool:
+	var tree := get_tree()
+	if tree == null:
+		return false
+	for node in tree.get_nodes_in_group("modal_cursor_ui"):
+		if node is CanvasItem and (node as CanvasItem).visible:
+			return true
+	return false
+
+
 func retomar_jogo() -> void:
 	visible = false
 	painel_pausa.visible = true
 	painel_configuracoes.visible = false
 	get_tree().paused = false
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	if _tem_menu_modal_cursor_ativo():
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	else:
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 # ==============================================================================
 # SINAIS - PAINEL PRINCIPAL DE PAUSA
