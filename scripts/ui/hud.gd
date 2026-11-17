@@ -7,6 +7,7 @@ const CENA_LANTERNA: PackedScene = preload("res://scenes/props/flashlight.tscn")
 const FILTRO_DELUSIO_CONTROLADOR := preload("res://scripts/visual/filtro_delusio_controlador.gd")
 const MENU_ESCOLHA_MEDICAMENTOS := preload("res://scripts/ui/menu_escolha_medicamentos.gd")
 const PAINEL_LEITURA_DOCUMENTO := preload("res://scripts/ui/painel_leitura_documento.gd")
+const PAINEL_LISTA_TAREFAS := preload("res://scripts/ui/painel_lista_tarefas.gd")
 
 @onready var label_tarefas: Label = $LabelTarefas
 @onready var reticula: ColorRect = $ColorRect
@@ -21,6 +22,8 @@ var _estilo_normal: StyleBoxFlat
 var _estilo_selecionado: StyleBoxFlat
 
 var _painel_sequencia: PainelSequenciaInteracao
+var _painel_lista_tarefas: PainelListaTarefas
+var _label_dica_lista_tarefas: Label
 var _filtro_delusio: FiltroDelusioControlador
 var _label_prompt_interacao: Label
 var _alvo_focado_atual: Interactable = null
@@ -45,6 +48,7 @@ func _ready() -> void:
 			call_deferred("abrir_menu_medicamentos")
 
 	_criar_painel_sequencia()
+	_criar_painel_lista_tarefas()
 	_criar_prompt_interacao()
 	_criar_hotbar()
 
@@ -87,6 +91,35 @@ func _criar_painel_leitura() -> void:
 	add_child(painel_leitura)
 
 
+func obter_painel_lista_tarefas() -> PainelListaTarefas:
+	return _painel_lista_tarefas
+
+
+func _criar_painel_lista_tarefas() -> void:
+	if _painel_lista_tarefas == null:
+		_painel_lista_tarefas = PAINEL_LISTA_TAREFAS.new()
+		_painel_lista_tarefas.name = "PainelListaTarefas"
+		add_child(_painel_lista_tarefas)
+
+	if _label_dica_lista_tarefas == null:
+		_label_dica_lista_tarefas = Label.new()
+		_label_dica_lista_tarefas.name = "LabelDicaListaTarefas"
+		_label_dica_lista_tarefas.position = Vector2(51.0, 68.0)
+		_label_dica_lista_tarefas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_label_dica_lista_tarefas.add_theme_font_size_override("font_size", 12)
+		_label_dica_lista_tarefas.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_AMBAR)
+		_label_dica_lista_tarefas.text = "[X] Lista de Tarefas"
+		add_child(_label_dica_lista_tarefas)
+
+
+func alternar_lista_tarefas() -> void:
+	if _painel_lista_tarefas == null:
+		_criar_painel_lista_tarefas()
+	_painel_lista_tarefas.alternar()
+	if _label_dica_lista_tarefas != null:
+		_label_dica_lista_tarefas.text = "[X] Ocultar Tarefas" if _painel_lista_tarefas.esta_aberta() else "[X] Lista de Tarefas"
+
+
 func _criar_menu_medicamentos() -> void:
 	if menu_medicamentos != null:
 		return
@@ -119,6 +152,8 @@ func _criar_filtro_delusio() -> void:
 func _on_horario_alterado(estado: int) -> void:
 	if _filtro_delusio:
 		_filtro_delusio.definir_estado_horario(estado, false)
+	if _painel_lista_tarefas != null and _painel_lista_tarefas.esta_aberta():
+		_painel_lista_tarefas.atualizar_lista()
 
 
 func _criar_painel_sequencia() -> void:
@@ -353,7 +388,7 @@ func _preparar_icone_lanterna() -> void:
 	var mundo_icone := Node3D.new()
 	_viewport_icone.add_child(mundo_icone)
 	var modelo := CENA_LANTERNA.instantiate() as Node3D
-	modelo.rotation_degrees = Vector3(-12.0, -28.0, -15.0)
+	modelo.rotation_degrees = Vector3(14.0, -35.0, -12.0)
 	mundo_icone.add_child(modelo)
 
 	var luz := DirectionalLight3D.new()
@@ -362,10 +397,10 @@ func _preparar_icone_lanterna() -> void:
 	mundo_icone.add_child(luz)
 
 	var camera_icone := Camera3D.new()
-	camera_icone.position = Vector3(3.2, 1.6, 4.2)
+	camera_icone.position = Vector3(0.22, 0.14, -0.22)
 	camera_icone.fov = 35.0
 	mundo_icone.add_child(camera_icone)
-	camera_icone.look_at(Vector3(0.0, 0.25, 0.0))
+	camera_icone.look_at(Vector3(0.0, 0.0, -0.01))
 	camera_icone.current = true
 
 
@@ -376,6 +411,8 @@ func _ocultar_hotbar() -> void:
 func _on_tarefas_atualizadas(_concluidas: int, _totais: int, mensagem: String) -> void:
 	if label_tarefas:
 		label_tarefas.text = mensagem
+	if _painel_lista_tarefas != null and _painel_lista_tarefas.esta_aberta():
+		_painel_lista_tarefas.atualizar_lista()
 
 
 func _on_status_temporario(mensagem: String) -> void:
@@ -384,13 +421,20 @@ func _on_status_temporario(mensagem: String) -> void:
 
 
 func _on_dia_iniciado(_dia: int) -> void:
+	if _painel_lista_tarefas != null and _painel_lista_tarefas.esta_aberta():
+		_painel_lista_tarefas.atualizar_lista()
 	if DisplayServer.get_name() != "headless":
 		abrir_menu_medicamentos()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_P:
+		if event.keycode == KEY_X:
+			if (menu_medicamentos and menu_medicamentos.visible) or (painel_leitura and painel_leitura.visible) or (_painel_sequencia and _painel_sequencia.visible):
+				return
+			alternar_lista_tarefas()
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_P:
 			if menu_medicamentos and menu_medicamentos.visible:
 				menu_medicamentos.fechar()
 			else:

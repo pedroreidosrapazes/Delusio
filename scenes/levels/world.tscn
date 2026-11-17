@@ -52,13 +52,13 @@ script = ExtResource("1_fj7yv")
 reticula = NodePath("../Hud/ColorRect")
 
 [node name="Camera3D" type="Camera3D" parent="CharacterBody3D" unique_id=191087586]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, -0.5585556)
 
 [node name="Flashlight" parent="CharacterBody3D/Camera3D" unique_id=1723816638 instance=ExtResource("2_036b0")]
-transform = Transform3D(0.07640508, 0, 0, 0, -0.024335511, 0.09480204, 0, -0.12224713, -0.018872067, 0.35000038, -0.27999997, -0.40000153)
+transform = Transform3D(4, 0, 0, 0, 4, 0, 0, 0, 4, 1.3474655, -0.8086505, -0.97031784)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="CharacterBody3D/Camera3D/Flashlight" unique_id=1410599914]
-transform = Transform3D(13.088136, 0, 0, 0, 2.1927445, -7.7172613, 0, 9.951402, 2.8275423, 0, 3.0517578e-05, -1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.165)
 light_energy = 4.0
 spot_range = 25.0
 
@@ -117,10 +117,6 @@ scale = Vector2(0.13650861, 0.08885167)
 [node name="Planta1" type="StaticBody3D" parent="Objetos_Tarefas" unique_id=633897167]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2504334, 25.911661)
 script = ExtResource("8_ioo17")
-id_tarefa = "regar_horta"
-nome_exibicao = "Regar a horta"
-tamanho_sequencia = 4
-tempo_limite_sequencia = 6.0
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Objetos_Tarefas/Planta1" unique_id=520151159]
 mesh = SubResource("BoxMesh_35478")
