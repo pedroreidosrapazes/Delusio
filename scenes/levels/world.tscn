@@ -12,7 +12,7 @@
 [ext_resource type="PackedScene" uid="uid://cq0vevrdh55bm" path="res://assets/environment/casa/Casa _final-col.glb" id="12_q5onr"]
 [ext_resource type="PackedScene" uid="uid://pausamenu001" path="res://scenes/ui/menu_pausa.tscn" id="15_xo05s"]
 [ext_resource type="Script" uid="uid://cy7h84l71d5kc" path="res://scripts/environment/casa_controlador.gd" id="16_casa"]
-[ext_resource type="PackedScene" uid="uid://b7k4m2p9rond1" path="res://scenes/monsters/rondante_fazenda.tscn" id="17_rond"]
+[ext_resource type="PackedScene" uid="uid://b7k4m2qarond1" path="res://scenes/monsters/rondante_fazenda.tscn" id="17_rond"]
 [ext_resource type="PackedScene" path="res://scenes/props/documento_mesa.tscn" id="18_docmesa"]
 [ext_resource type="PackedScene" path="res://scenes/props/jornal_mesa.tscn" id="19_jornalmesa"]
 
