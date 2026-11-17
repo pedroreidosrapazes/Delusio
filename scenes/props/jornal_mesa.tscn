@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/interactables/documento_leitura.gd" id="1_jornalscript"]
+[ext_resource type="PackedScene" path="res://assets/documentos/jornal_1.glb" id="2_jornalglb"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jornal1"]
+size = Vector3(0.36, 0.06, 0.5)
+
+[node name="JornalMesa" type="StaticBody3D"]
+script = ExtResource("1_jornalscript")
+documento_id = &"jornal_silhueta"
+titulo_documento = "A Sombra da Safra"
+subtitulo_data = "GAZETA RURAL — EDIÇÃO EXTRA | OUTONO"
+texto_conteudo = "MORADORES RELATAM FIGURA ALTA NAS BORDAS DO MILHARAL
+
+Diversos trabalhadores da antiga propriedade deixaram suas ferramentas para trás nesta última semana após avistarem uma silhueta escura observando a casa à distância.
+
+Segundo os relatos recolhidos antes do fechamento da estrada, a aparição parece recuar e se dissolver na névoa quando encarada diretamente na penumbra. Contudo, os dois vigias que insistiram em manter suas lanternas apontadas sobre o vulto afirmaram que o feixe começou a falhar segundos antes de a figura avançar contra eles.
+
+Autoridades locais recomendam: ao cair da tarde, evite permanecer de costas para o campo aberto por muito tempo, apague a lanterna caso ela comece a tremer diante do vulto e busque abrigo fechado sem luz caso seja perseguido."
+prompt_interacao = "Ler Jornal"
+
+[node name="Modelo" parent="." instance=ExtResource("2_jornalglb")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+shape = SubResource("BoxShape3D_jornal1")

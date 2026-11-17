@@ -1,13 +1,17 @@
 class_name Radio
 extends Interactable
 
-## Rádio interativo que reproduz notícias diárias.
+## Rádio interativo que reproduz notícias diárias e estática direcional noturna.
+
+signal estatica_direcional_tocada(zona: String)
 
 @export_category("Configurações do Player de Áudio")
 @export var audio_player: AudioStreamPlayer3D 
 
 @export_category("Transmissões de Áudio do Rádio")
 @export var audios_dias: Array[AudioStream]
+
+var ultima_zona_estatica: String = ""
 
 func _ready() -> void:
 	add_to_group("radio")
@@ -59,6 +63,13 @@ func tocar_noticia(dia: int) -> void:
 func parar_radio() -> void:
 	if audio_player and audio_player.is_playing():
 		audio_player.stop()
+
+
+func tocar_estatica_direcional(zona: String) -> void:
+	_garantir_audio_player()
+	ultima_zona_estatica = zona
+	estatica_direcional_tocada.emit(zona)
+	print("Rádio: Estática direcional indicando atividade perto de ", zona)
 
 func _executar_interacao(_jogador: Node3D) -> void:
 	if audio_player and audio_player.is_playing():

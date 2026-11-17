@@ -7,7 +7,7 @@ extends Control
 
 signal escolha_feita(opcao: int, resultado: Dictionary)
 
-const CENA_PLACA_PETRI := "res://assets/medicamentos e placa/PLACA DE PETRI.blend"
+const CENA_PLACA_PETRI := "res://assets/medicamentos_e_placa/PLACA DE PETRI.blend"
 const GRUPO_MODAL_CURSOR := "modal_cursor_ui"
 
 const DIAMETRO_PETRI_ALVO := 1.65

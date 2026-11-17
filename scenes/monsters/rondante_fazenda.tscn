@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://b7k4m2p9rond1"]
+
+[ext_resource type="Script" path="res://scripts/monsters/rondante_fazenda.gd" id="1_rond"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_corpo"]
+albedo_color = Color(0.04, 0.04, 0.05, 1)
+roughness = 0.92
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_rond"]
+radius = 0.45
+height = 2.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_olho"]
+albedo_color = Color(0.95, 0.45, 0.15, 1)
+emission_enabled = true
+emission = Color(1, 0.45, 0.15, 1)
+emission_energy_multiplier = 2.2
+
+[sub_resource type="SphereMesh" id="SphereMesh_olho"]
+radius = 0.055
+height = 0.11
+
+[node name="RondanteFazenda" type="Node3D"]
+script = ExtResource("1_rond")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.8
+target_desired_distance = 1.0
+
+[node name="VisualPlaceholder" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+material_override = SubResource("StandardMaterial3D_corpo")
+mesh = SubResource("CapsuleMesh_rond")
+
+[node name="OlhoEsquerdo" type="MeshInstance3D" parent="VisualPlaceholder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, 0.65, -0.38)
+material_override = SubResource("StandardMaterial3D_olho")
+mesh = SubResource("SphereMesh_olho")
+
+[node name="OlhoDireito" type="MeshInstance3D" parent="VisualPlaceholder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, 0.65, -0.38)
+material_override = SubResource("StandardMaterial3D_olho")
+mesh = SubResource("SphereMesh_olho")

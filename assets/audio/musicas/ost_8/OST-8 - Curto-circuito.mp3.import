@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://1532fyereoys"
+path="res://.godot/imported/OST-8 - Curto-circuito.mp3-71f5e06354ffd0574c82f2a465f7666b.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/musicas/ost_8/OST-8 - Curto-circuito.mp3"
+dest_files=["res://.godot/imported/OST-8 - Curto-circuito.mp3-71f5e06354ffd0574c82f2a465f7666b.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

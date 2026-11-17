@@ -27,6 +27,7 @@ var _luzes_internas: Array[OmniLight3D] = []
 var _energia_base_luzes: float = 0.25
 var _horario_atual: int = 0
 var _tempo_flicker: float = 0.0
+var queda_energia_ativa: bool = false
 
 
 func _ready() -> void:
@@ -51,6 +52,8 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
+	if queda_energia_ativa:
+		return
 	if _horario_atual >= 1 and not _luzes_internas.is_empty():
 		_tempo_flicker += delta * 7.5
 		# Candle flicker sutil senoidal
@@ -85,9 +88,22 @@ func atualizar_iluminacao_horario(estado: int) -> void:
 		_:
 			_energia_base_luzes = 0.25
 
+	if queda_energia_ativa:
+		return
+
 	for luz in _luzes_internas:
 		if luz != null and is_instance_valid(luz):
 			luz.light_energy = _energia_base_luzes
+
+
+func definir_queda_energia(ativa_queda: bool) -> void:
+	queda_energia_ativa = ativa_queda
+	if queda_energia_ativa:
+		for luz in _luzes_internas:
+			if luz != null and is_instance_valid(luz):
+				luz.light_energy = 0.08
+	else:
+		atualizar_iluminacao_horario(_horario_atual)
 
 
 func _criar_luzes_internas() -> void:
@@ -209,7 +225,7 @@ func _sincronizar_radio() -> void:
 		corpo_radio.set_script(script_radio)
 
 	# Carrega áudio da transmissão diária se disponível
-	var stream_noticia := load("res://assets/audio/radio_noticia_dia1.mp3") as AudioStream
+	var stream_noticia := load("res://assets/audio/sfx/radio_noticia_dia1.mp3") as AudioStream
 	if stream_noticia != null:
 		corpo_radio.set("audios_dias", [stream_noticia])
 

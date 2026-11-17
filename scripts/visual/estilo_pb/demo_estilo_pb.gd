@@ -1,8 +1,8 @@
 extends Node3D
 
 const Aplicador := preload("res://scripts/visual/estilo_pb/aplicador_estilo_pb.gd")
-const CASA_GLB := "res://casa/Casa _final-col.glb"
-const TEXTURA_FALLBACK := "res://Cenario_ideia (1)_oldWoodWhite.webp"
+const CASA_GLB := "res://assets/environment/casa/Casa _final-col.glb"
+const TEXTURA_FALLBACK := "res://assets/environment/cenario/Cenario_ideia (1)_oldWoodWhite.webp"
 const TEXTURA_RADIO := "res://assets/estilo_pb/radio_atlas_demo_input.png"
 const MASCARA_RADIO := "res://assets/estilo_pb/radio_atlas_demo_mask.png"
 

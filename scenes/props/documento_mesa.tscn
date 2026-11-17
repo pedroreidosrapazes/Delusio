@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/interactables/documento_leitura.gd" id="1_docscript"]
+[ext_resource type="PackedScene" path="res://assets/documentos/documento_1.glb" id="2_docglb"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_doc1"]
+size = Vector3(0.28, 0.05, 0.39)
+
+[node name="DocumentoMesa" type="StaticBody3D"]
+script = ExtResource("1_docscript")
+documento_id = &"bilhete_caseiro"
+titulo_documento = "Bilhete do Antigo Caseiro"
+subtitulo_data = "ANOTAÇÃO MANUSCRITA — DEIXADA NA MESA"
+texto_conteudo = "Para quem assumir a vigília:
+
+1. Nunca ignore o silêncio atrás de você depois que o sol cair. Se sentir o ar pesado, olhe rápido para trás [Q] sem a lanterna ligada — ela não suporta ser observada no escuro.
+
+2. Se a sua lanterna começar a piscar enquanto olha para o vulto, DESLIGUE [F] imediatamente. A luz direta alimenta a fúria dela.
+
+3. O abrigo de madeira lá fora segura a investida dela, mas só funciona se você permanecer no escuro. Se acender a lanterna lá dentro, ela saberá exatamente onde você está."
+prompt_interacao = "Ler Bilhete"
+
+[node name="Modelo" parent="." instance=ExtResource("2_docglb")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0)
+shape = SubResource("BoxShape3D_doc1")

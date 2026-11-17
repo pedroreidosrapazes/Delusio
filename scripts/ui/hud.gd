@@ -6,6 +6,7 @@ extends CanvasLayer
 const CENA_LANTERNA: PackedScene = preload("res://scenes/props/flashlight.tscn")
 const FILTRO_DELUSIO_CONTROLADOR := preload("res://scripts/visual/filtro_delusio_controlador.gd")
 const MENU_ESCOLHA_MEDICAMENTOS := preload("res://scripts/ui/menu_escolha_medicamentos.gd")
+const PAINEL_LEITURA_DOCUMENTO := preload("res://scripts/ui/painel_leitura_documento.gd")
 
 @onready var label_tarefas: Label = $LabelTarefas
 @onready var reticula: ColorRect = $ColorRect
@@ -24,6 +25,7 @@ var _filtro_delusio: FiltroDelusioControlador
 var _label_prompt_interacao: Label
 var _alvo_focado_atual: Interactable = null
 var menu_medicamentos: MenuEscolhaMedicamentos = null
+var painel_leitura: PainelLeituraDocumento = null
 
 
 func _ready() -> void:
@@ -31,6 +33,7 @@ func _ready() -> void:
 
 	_criar_filtro_delusio()
 	_criar_menu_medicamentos()
+	_criar_painel_leitura()
 	if GameManager.instance:
 		GameManager.instance.tarefas_atualizadas.connect(_on_tarefas_atualizadas)
 		GameManager.instance.status_temporario.connect(_on_status_temporario)
@@ -67,6 +70,21 @@ func obter_filtro_delusio() -> FiltroDelusioControlador:
 
 func obter_menu_medicamentos() -> MenuEscolhaMedicamentos:
 	return menu_medicamentos
+
+
+func obter_painel_leitura() -> PainelLeituraDocumento:
+	return painel_leitura
+
+
+func _criar_painel_leitura() -> void:
+	if painel_leitura != null:
+		return
+	painel_leitura = PAINEL_LEITURA_DOCUMENTO.new()
+	painel_leitura.name = "PainelLeituraDocumento"
+	painel_leitura.filtro_delusio = _filtro_delusio
+	painel_leitura.leitura_aberta.connect(func(_t): _atualizar_prompt_interacao())
+	painel_leitura.leitura_fechada.connect(func(): _atualizar_prompt_interacao())
+	add_child(painel_leitura)
 
 
 func _criar_menu_medicamentos() -> void:
@@ -143,7 +161,7 @@ func _atualizar_prompt_interacao() -> void:
 		_label_prompt_interacao.visible = false
 		return
 
-	if player != null and player.esta_em_interacao_sequencia():
+	if (painel_leitura != null and painel_leitura.visible) or (player != null and player.esta_em_interacao_sequencia()):
 		_label_prompt_interacao.visible = false
 		return
 
@@ -163,6 +181,10 @@ func _atualizar_prompt_interacao() -> void:
 func _ao_sequencia_iniciada(sequencia: Array[int], tempo_limite: float, titulo: String) -> void:
 	if _label_prompt_interacao:
 		_label_prompt_interacao.visible = false
+	if _temporizador:
+		_temporizador.stop()
+	if _barra:
+		_barra.hide()
 	if _painel_sequencia:
 		_painel_sequencia.mostrar_sequencia(sequencia, tempo_limite, titulo)
 

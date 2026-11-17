@@ -11,6 +11,7 @@ signal sequencia_interacao_passo(indice: int, total: int)
 signal sequencia_interacao_erro(motivo: String, nova_sequencia: Array[int], tempo_restante: float)
 signal sequencia_interacao_tempo(restante: float, limite: float)
 signal sequencia_interacao_finalizada(sucesso: bool)
+signal som_emitido(posicao: Vector3, raio: float, tipo: String)
 
 const HOTBAR_SLOTS: int = 6
 const MAX_POR_ITEM: int = 50
@@ -59,7 +60,11 @@ var _rotacao_y_olhar_tras: float = 0.0
 @onready var luz_lanterna: SpotLight3D = get_node_or_null("Camera3D/Flashlight/SpotLight3D") as SpotLight3D
 
 const COR_LANTERNA_PADRAO := Color("#ffe3a8")
-var _energia_base_lanterna: float = 4.0
+const ALCANCE_LANTERNA_PADRAO: float = 32.0
+const ANGULO_LANTERNA_PADRAO: float = 52.0
+const ATENUACAO_DISTANCIA_LANTERNA: float = 0.85
+const ATENUACAO_ANGULO_LANTERNA: float = 0.75
+var _energia_base_lanterna: float = 4.8
 
 var tempo_balanco: float = 0.0
 var posicao_original_camera: Vector3
@@ -68,6 +73,7 @@ var _desafio_sequencia: SequenciaDirecionalDesafio = SequenciaDirecionalDesafio.
 var _interacao_ativa_alvo: Interactable = null
 var _interagivel_focado: Interactable = null
 var esconderijo_atual: Node = null
+var _timer_som_movimento: float = 0.0
 
 
 func _ready() -> void:
@@ -76,7 +82,7 @@ func _ready() -> void:
 	if camera:
 		posicao_original_camera = camera.transform.origin
 	if luz_lanterna:
-		luz_lanterna.light_color = COR_LANTERNA_PADRAO
+		_aplicar_configuracao_lanterna()
 	_atualizar_aparencia_lanterna()
 
 	_desafio_sequencia.sequencia_iniciada.connect(
@@ -89,6 +95,7 @@ func _ready() -> void:
 	)
 	_desafio_sequencia.sequencia_errada.connect(
 		func(motivo: String, seq: Array[int], rest: float):
+			emitir_som(22.0, "erro_sequencia")
 			sequencia_interacao_erro.emit(motivo, seq, rest)
 	)
 	_desafio_sequencia.tempo_atualizado.connect(
@@ -271,6 +278,24 @@ func esta_com_lanterna_acesa() -> bool:
 func entrar_esconderijo(esconderijo: Node) -> void:
 	esconderijo_atual = esconderijo
 	velocity = Vector3.ZERO
+	if get_tree() != null:
+		for monstro in get_tree().get_nodes_in_group("monstros_noturnos"):
+			if monstro != null and is_instance_valid(monstro) and monstro.has_method("notificar_jogador_entrou_esconderijo"):
+				monstro.notificar_jogador_entrou_esconderijo(self)
+
+
+func emitir_som(raio: float, tipo: String = "generico") -> void:
+	var mult_ruido := 1.0
+	var gerente := GameManager.instance
+	if gerente != null and ("gerenciador_medicamentos" in gerente) and gerente.gerenciador_medicamentos != null:
+		mult_ruido += float(gerente.gerenciador_medicamentos.obter_modificador("ruido_movimento", 0.0))
+	var raio_final := maxf(0.0, raio * mult_ruido)
+	var pos := global_position if is_inside_tree() else position
+	som_emitido.emit(pos, raio_final, tipo)
+	if get_tree() != null:
+		for monstro in get_tree().get_nodes_in_group("monstros_noturnos"):
+			if monstro != null and is_instance_valid(monstro) and monstro.has_method("receber_estimulo_sonoro"):
+				monstro.receber_estimulo_sonoro(pos, raio_final)
 
 
 func sair_esconderijo() -> void:
@@ -325,14 +350,24 @@ func adicionar_item(id: StringName, quantidade: int) -> int:
 	return quantidade - adicionado
 
 
+func _aplicar_configuracao_lanterna() -> void:
+	if luz_lanterna == null:
+		return
+	luz_lanterna.light_color = COR_LANTERNA_PADRAO
+	luz_lanterna.light_energy = _energia_base_lanterna
+	luz_lanterna.spot_range = ALCANCE_LANTERNA_PADRAO
+	luz_lanterna.spot_angle = ANGULO_LANTERNA_PADRAO
+	luz_lanterna.spot_attenuation = ATENUACAO_DISTANCIA_LANTERNA
+	luz_lanterna.spot_angle_attenuation = ATENUACAO_ANGULO_LANTERNA
+
+
 func _atualizar_aparencia_lanterna() -> void:
 	if lanterna:
 		lanterna.visible = _lanterna_equipada
 	if luz_lanterna:
 		luz_lanterna.visible = _lanterna_equipada and _luz_lanterna_acesa
 		if luz_lanterna.visible:
-			luz_lanterna.light_color = COR_LANTERNA_PADRAO
-			luz_lanterna.light_energy = _energia_base_lanterna
+			_aplicar_configuracao_lanterna()
 
 
 func calcular_fator_instabilidade_lanterna(distancia: float) -> float:
@@ -349,7 +384,11 @@ func _processar_instabilidade_lanterna(_delta: float) -> void:
 	if gerente != null and gerente.silhueta != null and is_instance_valid(gerente.silhueta) and gerente.silhueta.visible:
 		var dist := global_position.distance_to(gerente.silhueta.global_position)
 		var fator := calcular_fator_instabilidade_lanterna(dist)
-		if fator < 1.0:
+		var em_ameaca := ("estado_atual" in gerente.silhueta) and int(gerente.silhueta.estado_atual) == Silhueta.Estado.AMEACA_LANTERNA
+		if em_ameaca:
+			var flicker_ameaca := sin(Time.get_ticks_msec() * 0.09) * 0.45 + sin(Time.get_ticks_msec() * 0.028) * 0.25
+			luz_lanterna.light_energy = clampf(_energia_base_lanterna * (0.55 + flicker_ameaca), _energia_base_lanterna * 0.18, _energia_base_lanterna * 1.15)
+		elif fator < 1.0:
 			var flicker := sin(Time.get_ticks_msec() * 0.045) * 0.25 + sin(Time.get_ticks_msec() * 0.012) * 0.15
 			luz_lanterna.light_energy = clampf(_energia_base_lanterna * (fator + flicker), _energia_base_lanterna * 0.35, _energia_base_lanterna * 1.15)
 		else:
@@ -458,6 +497,13 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravidade * delta
 
+	if _deve_manter_cursor_livre():
+		velocity.x = move_toward(velocity.x, 0, velocidade_andar)
+		velocity.z = move_toward(velocity.z, 0, velocidade_andar)
+		move_and_slide()
+		_timer_som_movimento = 0.0
+		return
+
 	if esta_em_interacao_sequencia():
 		velocity.x = move_toward(velocity.x, 0, velocidade_andar)
 		velocity.z = move_toward(velocity.z, 0, velocidade_andar)
@@ -489,6 +535,17 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0, vel_atual)
 
 	move_and_slide()
+
+	if is_on_floor() and Vector2(velocity.x, velocity.z).length() > 0.4:
+		_timer_som_movimento += delta
+		if _timer_som_movimento >= 0.45:
+			_timer_som_movimento = 0.0
+			if esta_correndo:
+				emitir_som(18.0, "corrida")
+			else:
+				emitir_som(6.5, "passos")
+	else:
+		_timer_som_movimento = 0.0
 
 	if balanco_ativo and camera:
 		_processar_balanco_camera(delta, input_dir, esta_correndo)

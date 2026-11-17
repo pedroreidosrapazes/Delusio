@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://pfw77ohmbbo1"
+path="res://.godot/imported/OST-4 - Esboco 06 Export 1.mp3-949025d88a617401accdc6c136b97c59.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/musicas/ost_4/OST-4 - Esboco 06 Export 1.mp3"
+dest_files=["res://.godot/imported/OST-4 - Esboco 06 Export 1.mp3-949025d88a617401accdc6c136b97c59.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

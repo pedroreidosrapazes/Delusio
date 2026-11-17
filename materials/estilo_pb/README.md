@@ -64,16 +64,16 @@ Materiais transparentes em blend são aproximados como alpha cutout. A ordem de 
 
 ## Demonstração e validação
 
-Abra `scenes/demos/estilo_pb/demo_estilo_pb.tscn` para ver a malha `Cube_017` do GLB da casa, cuja textura usa o atlas de rádio, com a máscara `assets/estilo_pb/radio_atlas_demo_mask.png`. Se o GLB ou imagem não estiver disponível, a demo usa caixa e textura de madeira local. Como o PNG de máscara do exemplo já contém linhas extraídas, a demo desliga `usar_extracao_automatica` por padrão; ative a propriedade exportada no inspetor para comparar a extração automática. O contorno animado e glow aparecem com o `WorldEnvironment` local da demo. Os testes sem dependências externas ficam em `scripts/visual/estilo_pb/teste_aplicador_estilo_pb.gd` e podem ser executados assim:
+Abra `scenes/demos/estilo_pb/demo_estilo_pb.tscn` para ver a malha `Cube_017` do GLB da casa, cuja textura usa o atlas de rádio, com a máscara `assets/estilo_pb/radio_atlas_demo_mask.png`. Se o GLB ou imagem não estiver disponível, a demo usa caixa e textura de madeira local. Como o PNG de máscara do exemplo já contém linhas extraídas, a demo desliga `usar_extracao_automatica` por padrão; ative a propriedade exportada no inspetor para comparar a extração automática. O contorno animado e glow aparecem com o `WorldEnvironment` local da demo. Os testes sem dependências externas ficam em `scripts/tests/visual/estilo_pb/teste_aplicador_estilo_pb.gd` e podem ser executados assim:
 
 ```powershell
-Godot_v4.7.2-stable_win64_console.exe --headless --path . --script res://scripts/visual/estilo_pb/teste_aplicador_estilo_pb.gd
+Godot_v4.7.2-stable_win64_console.exe --headless --path . --script res://scripts/tests/visual/estilo_pb/teste_aplicador_estilo_pb.gd
 ```
 
 O teste temporal precisa de um renderer gráfico real e não deve ser executado com `--headless`:
 
 ```powershell
-Godot_v4.7.2-stable_win64_console.exe --path . --script res://scripts/visual/estilo_pb/teste_animacao_estilo_pb.gd
+Godot_v4.7.2-stable_win64_console.exe --path . --script res://scripts/tests/visual/estilo_pb/teste_animacao_estilo_pb.gd
 ```
 
 Ele captura dois frames separados por 730 ms, chama `RenderingServer.force_draw()` e verifica que a faixa alterou pixels renderizados. Em 4.7.2 Forward+ D3D12, a demo padrão alterou 32 mil pixels nessa comparação.
