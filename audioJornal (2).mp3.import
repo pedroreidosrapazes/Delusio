@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bamejni4cng6x"
+path="res://.godot/imported/audioJornal (2).mp3-3ff882eda58f3efb412086f64ed294ae.mp3str"
+
+[deps]
+
+source_file="res://audioJornal (2).mp3"
+dest_files=["res://.godot/imported/audioJornal (2).mp3-3ff882eda58f3efb412086f64ed294ae.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

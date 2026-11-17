@@ -208,14 +208,40 @@ func _sincronizar_radio() -> void:
 	if corpo_radio.get_script() != script_radio:
 		corpo_radio.set_script(script_radio)
 
-	# Carrega áudio da transmissão diária se disponível
+	# Inicializa explicitamente pois set_script em nó já na árvore não dispara _ready()
+	if corpo_radio.has_method("inicializar_radio"):
+		corpo_radio.inicializar_radio()
+	corpo_radio.set_process(true)
+
+	# Carrega o novo áudio de voz sintética do rádio se ainda não atribuído
+	var sons_atuais = corpo_radio.get("sons_jornal")
+	if sons_atuais == null or (sons_atuais is Array and sons_atuais.is_empty()):
+		var clipes_sinteticos: Array[AudioStream] = []
+		for caminho_som in [
+			"res://audioJornal (2).mp3",
+			"res://assets/audio/audioJornal (2).mp3",
+			"res://audioJornal (1).mp3",
+			"res://audioJornal (3).mp3"
+		]:
+			if ResourceLoader.exists(caminho_som):
+				var clipe := load(caminho_som) as AudioStream
+				if clipe != null:
+					clipes_sinteticos.append(clipe)
+		if not clipes_sinteticos.is_empty():
+			corpo_radio.set("sons_jornal", clipes_sinteticos)
+
+	# Carrega áudio longo legado da transmissão diária como fallback
 	var stream_noticia := load("res://assets/audio/radio_noticia_dia1.mp3") as AudioStream
 	if stream_noticia != null:
 		corpo_radio.set("audios_dias", [stream_noticia])
 
-	# Vincula ao GameManager caso esteja vazio
-	if GameManager.instance != null and GameManager.instance.radio == null:
-		GameManager.instance.radio = corpo_radio
+	# Vincula ao GameManager caso esteja vazio e inicia transmissão do dia se pendente
+	if GameManager.instance != null:
+		if GameManager.instance.radio == null:
+			GameManager.instance.radio = corpo_radio
+		if GameManager.instance.horario_atual == 0 and corpo_radio.has_method("esta_transmitindo"):
+			if not corpo_radio.esta_transmitindo():
+				corpo_radio.call_deferred("tocar_noticia", GameManager.instance.dia_atual)
 
 
 func _sincronizar_cama() -> void:
