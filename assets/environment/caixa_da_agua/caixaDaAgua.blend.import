@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://blhwc6ni82c3o"
-path="res://.godot/imported/caixaDaAgua.blend-432dc5719c6fa4aabfdb68ef1b1d7a85.scn"
+path="res://.godot/imported/caixaDaAgua.blend-f58c5354590f103cd0df895b90677ff6.scn"
 
 [deps]
 
-source_file="res://caixaDaAgua.blend"
-dest_files=["res://.godot/imported/caixaDaAgua.blend-432dc5719c6fa4aabfdb68ef1b1d7a85.scn"]
+source_file="res://assets/environment/caixa_da_agua/caixaDaAgua.blend"
+dest_files=["res://.godot/imported/caixaDaAgua.blend-f58c5354590f103cd0df895b90677ff6.scn"]
 
 [params]
 
