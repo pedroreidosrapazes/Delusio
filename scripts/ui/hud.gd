@@ -8,6 +8,7 @@ const FILTRO_DELUSIO_CONTROLADOR := preload("res://scripts/visual/filtro_delusio
 const MENU_ESCOLHA_MEDICAMENTOS := preload("res://scripts/ui/menu_escolha_medicamentos.gd")
 const PAINEL_LEITURA_DOCUMENTO := preload("res://scripts/ui/painel_leitura_documento.gd")
 const PAINEL_LISTA_TAREFAS := preload("res://scripts/ui/painel_lista_tarefas.gd")
+const LEGENDA_RADIO_UI := preload("res://scripts/ui/legenda_radio_ui.gd")
 
 @onready var label_tarefas: Label = $LabelTarefas
 @onready var reticula: ColorRect = $ColorRect
@@ -23,6 +24,7 @@ var _estilo_selecionado: StyleBoxFlat
 
 var _painel_sequencia: PainelSequenciaInteracao
 var _painel_lista_tarefas: PainelListaTarefas
+var _legenda_radio: LegendaRadioUI
 var _label_dica_lista_tarefas: Label
 var _filtro_delusio: FiltroDelusioControlador
 var _label_prompt_interacao: Label
@@ -49,6 +51,7 @@ func _ready() -> void:
 
 	_criar_painel_sequencia()
 	_criar_painel_lista_tarefas()
+	_criar_legenda_radio()
 	_criar_prompt_interacao()
 	_criar_hotbar()
 
@@ -93,6 +96,22 @@ func _criar_painel_leitura() -> void:
 
 func obter_painel_lista_tarefas() -> PainelListaTarefas:
 	return _painel_lista_tarefas
+
+
+func obter_legenda_radio() -> LegendaRadioUI:
+	return _legenda_radio
+
+
+func _criar_legenda_radio() -> void:
+	if _legenda_radio != null:
+		return
+	var existente := get_node_or_null("LegendaRadioUI") as LegendaRadioUI
+	if existente != null:
+		_legenda_radio = existente
+		return
+	_legenda_radio = LEGENDA_RADIO_UI.new()
+	_legenda_radio.name = "LegendaRadioUI"
+	add_child(_legenda_radio)
 
 
 func _criar_painel_lista_tarefas() -> void:
