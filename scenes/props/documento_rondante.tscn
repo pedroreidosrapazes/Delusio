@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/interactables/documento_leitura.gd" id="1_docrond"]
+[ext_resource type="PackedScene" path="res://assets/documentos/documento_1.glb" id="2_docglb"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_docrond"]
+size = Vector3(0.28, 0.05, 0.39)
+
+[node name="DocumentoRondante" type="StaticBody3D"]
+script = ExtResource("1_docrond")
+documento_id = &"diario_celeiro"
+titulo_documento = "Anotações do Celeiro"
+subtitulo_data = "REGISTRO DE VIGIA — ENCONTRADO PERTO DO PORTÃO"
+texto_conteudo = "RELATÓRIO SOBRE A CRIATURA QUE RONDA O TERRENO:
+
+1. Ela não enxerga bem à distância, mas ouve tudo. Correr, bater portas ou errar o conserto das bombas atrai sua atenção imediatamente para o local do barulho.
+
+2. Costuma parar nas quinas do celeiro e do silo para espiar antes de avançar. Se ouvir passos pesados se aproximando, apague a lanterna e entre em um armário ou abrigo sem fazer ruído.
+
+3. Se ficar encurralado, aponte o feixe direto nos olhos dela por um instante para deixá-la desnorteada — mas lembre-se: usar luz demais desperta a outra sombra."
+prompt_interacao = "Ler Anotações do Celeiro"
+
+[node name="Modelo" parent="." instance=ExtResource("2_docglb")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0)
+shape = SubResource("BoxShape3D_docrond")

@@ -235,11 +235,14 @@ func disparar_som_localizado(nome_marcador: String = "", forcar: bool = false) -
 	if filtro != null and filtro.has_method("registrar_impulso_tensao"):
 		filtro.registrar_impulso_tensao(0.18)
 
-	# Estímulo ambiental na IA apenas para pontos fixos da fazenda quando o Rondante está em patrulha
+	# Estímulo ambiental na IA apenas para pontos fixos da fazenda quando o Rondante está em patrulha ou em espera
 	if nome_escolhido != "GalhosAtrasJogador":
 		var rondante := _obter_rondante()
-		if rondante != null and rondante.ativa and rondante.estado_atual == RondanteFazenda.Estado.PATRULHA:
-			rondante.receber_estimulo_sonoro(pos, 14.0)
+		if rondante != null and rondante.ativa:
+			if rondante.estado_atual == RondanteFazenda.Estado.PATRULHA:
+				rondante.receber_estimulo_sonoro(pos, 14.0)
+			elif rondante.estado_atual == RondanteFazenda.Estado.EM_ESPERA:
+				rondante.registrar_pressao_ruido(25.0, pos)
 
 	_registrar_disparo(&"som_localizado", {"marcador": nome_escolhido, "posicao": pos})
 	som_ambiental_disparado.emit(nome_escolhido, pos)
@@ -250,12 +253,22 @@ func registrar_alivio_pos_susto(duracao: float = -1.0) -> void:
 	janela_alivio_restante = duracao if duracao > 0.0 else duracao_alivio_pos_susto
 
 
+func pode_rondante_entrar() -> bool:
+	if janela_alivio_restante > 0.0:
+		return false
+	var silhueta := _obter_silhueta()
+	if silhueta != null and ("ativa" in silhueta) and silhueta.ativa:
+		if ("em_investida" in silhueta) and silhueta.em_investida:
+			return false
+	return true
+
+
 func coordenar_spawn_inicial_monstros() -> void:
 	var player := _obter_player()
 	var silhueta := _obter_silhueta()
 	var rondante := _obter_rondante()
 
-	if rondante != null and player != null:
+	if rondante != null and player != null and rondante.estado_atual != RondanteFazenda.Estado.EM_ESPERA:
 		if rondante.global_position.distance_to(player.global_position) < distancia_minima_entre_monstros_spawn:
 			var waypoints := rondante.obter_waypoints()
 			if not waypoints.is_empty():
@@ -272,15 +285,18 @@ func coordenar_spawn_inicial_monstros() -> void:
 		var em_intro_passiva := ("estado_atual" in silhueta) and int(silhueta.estado_atual) == Silhueta.Estado.INTRODUCAO_ESPREITA
 		if not em_intro_passiva:
 			var perto_player := silhueta.global_position.distance_to(player.global_position) < distancia_minima_entre_monstros_spawn
-			var perto_rondante := rondante != null and silhueta.global_position.distance_to(rondante.global_position) < distancia_minima_entre_monstros_spawn
+			var perto_rondante := rondante != null and rondante.estado_atual != RondanteFazenda.Estado.EM_ESPERA and silhueta.global_position.distance_to(rondante.global_position) < distancia_minima_entre_monstros_spawn
 			if (perto_player or perto_rondante) and silhueta.has_method("mover_para_novo_local"):
 				silhueta.mover_para_novo_local()
 
 
-func coordenar_monstros(_delta: float) -> void:
+func coordenar_monstros(delta: float) -> void:
 	var player := _obter_player()
 	var silhueta := _obter_silhueta()
 	var rondante := _obter_rondante()
+
+	if rondante != null and rondante.ativa and rondante.estado_atual == RondanteFazenda.Estado.EM_ESPERA:
+		rondante.registrar_pressao_ruido(delta * (3.0 + nivel_tensao * 4.0))
 
 	if janela_alivio_restante > 0.0:
 		if silhueta != null and ("ativa" in silhueta) and silhueta.ativa:
@@ -291,7 +307,7 @@ func coordenar_monstros(_delta: float) -> void:
 					silhueta.recuar_anel()
 				if silhueta.has_method("mover_para_novo_local"):
 					silhueta.mover_para_novo_local()
-		if rondante != null and rondante.ativa and rondante.estado_atual == RondanteFazenda.Estado.CACADA:
+		if rondante != null and rondante.ativa and rondante.estado_atual in [RondanteFazenda.Estado.CACADA, RondanteFazenda.Estado.ATAQUE_GARRAS]:
 			rondante.mudar_estado(RondanteFazenda.Estado.PATRULHA)
 		return
 

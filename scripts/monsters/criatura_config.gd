@@ -3,6 +3,11 @@ extends Resource
 
 ## Recurso configurável no Inspector para parâmetros de IA e percepção de monstros noturnos.
 
+enum ModoPresencaRondante {
+	CONTINUO = 0,
+	PRESSAO_DINAMICA = 1
+}
+
 @export_category("Identidade")
 @export var nome_criatura: String = "Criatura Noturna"
 
@@ -20,6 +25,13 @@ extends Resource
 @export var intervalo_min_evento: float = 8.0
 @export var sensivel_a_luz: bool = true
 @export var tempo_tolerancia_esconderijo: float = 2.5
+
+@export_category("Presença e Ronda Dinâmica")
+@export var modo_presenca_rondante: ModoPresencaRondante = ModoPresencaRondante.CONTINUO
+@export var limiar_pressao_entrada: float = 100.0
+@export var duracao_ronda_min: float = 28.0
+@export var duracao_ronda_max: float = 45.0
+@export var distancia_min_spawn_jogador: float = 22.0
 
 
 static func criar_padrao_silhueta() -> CriaturaConfig:
@@ -49,4 +61,15 @@ static func criar_padrao_rondante() -> CriaturaConfig:
 	cfg.intervalo_min_evento = 8.0
 	cfg.sensivel_a_luz = true
 	cfg.tempo_tolerancia_esconderijo = 2.0
+	cfg.modo_presenca_rondante = ModoPresencaRondante.CONTINUO
+	return cfg
+
+
+static func criar_padrao_rondante_pressao() -> CriaturaConfig:
+	var cfg := criar_padrao_rondante()
+	cfg.modo_presenca_rondante = ModoPresencaRondante.PRESSAO_DINAMICA
+	cfg.limiar_pressao_entrada = 100.0
+	cfg.duracao_ronda_min = 28.0
+	cfg.duracao_ronda_max = 45.0
+	cfg.distancia_min_spawn_jogador = 22.0
 	return cfg

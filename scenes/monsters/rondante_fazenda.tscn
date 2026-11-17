@@ -27,8 +27,20 @@ script = ExtResource("1_rond")
 path_desired_distance = 0.8
 target_desired_distance = 1.0
 
+[node name="ModeloPivot" type="Node3D" parent="."]
+transform = Transform3D(0, 0, 0.28, 0, 0.28, 0, -0.28, 0, 0, 0, 0, 0)
+
+[node name="AudioPassos3D" type="AudioStreamPlayer3D" parent="."]
+max_distance = 26.0
+bus = &"Master"
+
+[node name="AudioVocalizacao3D" type="AudioStreamPlayer3D" parent="."]
+max_distance = 32.0
+bus = &"Master"
+
 [node name="VisualPlaceholder" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+visible = false
 material_override = SubResource("StandardMaterial3D_corpo")
 mesh = SubResource("CapsuleMesh_rond")
 
