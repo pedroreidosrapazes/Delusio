@@ -82,6 +82,13 @@ func _executar_interacao(_jogador: Node3D = null) -> void:
 	if animando:
 		return
 
+	if _jogador is Player:
+		var p := _jogador as Player
+		if Input.is_action_pressed("run") or p.velocity.length() > p.velocidade_andar + 0.5:
+			p.emitir_som(18.0, "porta_correndo")
+		else:
+			p.emitir_som(9.0, "porta")
+
 	if animation_player == null:
 		_resolver_animation_player()
 

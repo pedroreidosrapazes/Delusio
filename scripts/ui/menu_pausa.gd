@@ -6,7 +6,7 @@ extends Control
 ## e configurações in-game sincronizadas com Tween compatível com árvore pausada.
 
 @export_group("Navegação de Cenas")
-@export_file("*.tscn") var cena_menu: String = "res://scenes/main_menu.tscn"
+@export_file("*.tscn") var cena_menu: String = "res://scenes/ui/main_menu.tscn"
 
 @export_group("Referências de Nós")
 @onready var fundo_escuro: ColorRect = $FundoEscuro
@@ -96,6 +96,11 @@ func _inicializar_controles() -> void:
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and not event.is_echo():
 		if not get_tree().paused:
+			for painel in get_tree().get_nodes_in_group("painel_leitura_documento"):
+				if painel is CanvasItem and (painel as CanvasItem).visible and painel.has_method("fechar"):
+					painel.fechar()
+					get_viewport().set_input_as_handled()
+					return
 			pausar_jogo()
 		else:
 			if painel_configuracoes.visible:
@@ -194,9 +199,6 @@ func _on_botao_menu_principal_pressed() -> void:
 	var caminho_final: String = cena_menu
 	if not ResourceLoader.exists(caminho_final):
 		var alternativas: Array[String] = [
-			"res://scenes/main_menu.tscn",
-			"res://main_menu.tscn",
-			"res://scenes/menu_principal.tscn",
 			"res://scenes/ui/main_menu.tscn"
 		]
 		for alt in alternativas:

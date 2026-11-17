@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cp36w1u2p3dgk"]
 
-[ext_resource type="PackedScene" uid="uid://c550ik5ekhbvq" path="res://lanterna_delusio.blend" id="1_lanterna"]
+[ext_resource type="PackedScene" uid="uid://c550ik5ekhbvq" path="res://assets/props/lanterna/lanterna_delusio.blend" id="1_lanterna"]
 
 [node name="Flashlight" type="Node3D" unique_id=1723816638]
 

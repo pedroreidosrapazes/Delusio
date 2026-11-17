@@ -96,15 +96,15 @@ func _obter_config_horario(estado: int) -> Dictionary:
 		EstadoDia.NOITE:
 			return {
 				"light_rot": Vector3(-35, -45, 0),
-				"light_color": Color("#4a6b9c"),
-				"light_energy": 0.28,
-				"bg_energy": 0.28,
-				"ambient_color": Color("#162033"),
-				"ambient_energy": 0.38,
-				"fog_color": Color("#0d1522"),
-				"fog_density": 0.042,
-				"contrast": 1.15,
-				"saturation": 0.78
+				"light_color": Color("#6482ad"),
+				"light_energy": 0.46,
+				"bg_energy": 0.45,
+				"ambient_color": Color("#24334d"),
+				"ambient_energy": 0.58,
+				"fog_color": Color("#1b283d"),
+				"fog_density": 0.020,
+				"contrast": 1.08,
+				"saturation": 0.82
 			}
 		_:
 			return _obter_config_horario(EstadoDia.DIA)

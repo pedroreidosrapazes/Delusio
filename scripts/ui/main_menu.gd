@@ -6,8 +6,8 @@ extends Control
 ## exibição de tela, V-Sync e calibragem de brilho/exposição.
 
 @export_group("Cenas")
-## Caminho da cena 3D de Gameplay (Fazenda). Se não encontrar CenaPrincipal.tscn, tenta world.tscn.
-@export_file("*.tscn") var cena_jogo: String = "res://CenaPrincipal.tscn"
+## Caminho da cena 3D de Gameplay (Fazenda).
+@export_file("*.tscn") var cena_jogo: String = "res://scenes/levels/world.tscn"
 
 @export_group("Atmosfera 3D da Tela Título")
 @export var amplitude_respiracao_pos: float = 0.014
@@ -145,9 +145,8 @@ func _mostrar_configuracoes() -> void:
 func _on_botao_jogar_pressed() -> void:
 	var destino: String = cena_jogo
 
-	# Fallback seguro caso CenaPrincipal.tscn ainda não exista
-	if not ResourceLoader.exists(destino) and ResourceLoader.exists("res://scenes/world.tscn"):
-		destino = "res://scenes/world.tscn"
+	if not ResourceLoader.exists(destino) and ResourceLoader.exists("res://scenes/levels/world.tscn"):
+		destino = "res://scenes/levels/world.tscn"
 
 	if destino.is_empty():
 		push_error("MainMenu: Nenhuma cena de gameplay atribuída em 'cena_jogo'.")

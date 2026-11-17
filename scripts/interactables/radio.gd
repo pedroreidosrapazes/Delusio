@@ -1,14 +1,15 @@
 class_name Radio
 extends Interactable
 
-## Rádio interativo com legendas estilo Animal Crossing / Lethal Company
-## e áudio posicional 3D sincronizado com efeito typewriter e repetição contínua.
+## Rádio interativo com legendas estilo Animal Crossing / Lethal Company,
+## áudio posicional 3D sincronizado com efeito typewriter e estática direcional noturna.
 
 signal transmissao_iniciada(dia: int)
 signal legenda_atualizada(texto_completo: String, caracteres_visiveis: int)
 signal proximidade_alterada(fator_visibilidade: float)
 signal transmissao_finalizada()
 signal radio_desligado()
+signal estatica_direcional_tocada(zona: String)
 
 enum EstadoTransmissao { INATIVO = 0, DIGITANDO = 1, PAUSA_ENTRE_FRASES = 2, PAUSA_REPETICAO = 3 }
 
@@ -96,6 +97,8 @@ var _tween_fade_voz: Tween
 var _modo_audio_legado: bool = false
 var _cursor_clipe_longo: float = 0.0
 
+
+var ultima_zona_estatica: String = ""
 
 func _ready() -> void:
 	inicializar_radio()
@@ -225,6 +228,13 @@ func parar_radio() -> void:
 	if estava_ativo:
 		print("Rádio desligado.")
 
+
+
+func tocar_estatica_direcional(zona: String) -> void:
+	_garantir_audio_player()
+	ultima_zona_estatica = zona
+	estatica_direcional_tocada.emit(zona)
+	print("Rádio: Estática direcional indicando atividade perto de ", zona)
 
 func _executar_interacao(_jogador: Node3D) -> void:
 	if esta_transmitindo() or (audio_player != null and audio_player.playing):

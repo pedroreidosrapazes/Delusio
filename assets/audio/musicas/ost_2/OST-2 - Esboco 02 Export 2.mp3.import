@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://yoios71nv47k"
+path="res://.godot/imported/OST-2 - Esboco 02 Export 2.mp3-a63f3ddf6a118047f531ab65149144f1.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/musicas/ost_2/OST-2 - Esboco 02 Export 2.mp3"
+dest_files=["res://.godot/imported/OST-2 - Esboco 02 Export 2.mp3-a63f3ddf6a118047f531ab65149144f1.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

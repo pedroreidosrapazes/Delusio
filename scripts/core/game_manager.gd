@@ -10,6 +10,8 @@ signal noite_iniciada()
 signal tarefas_atualizadas(concluidas: int, totais: int, mensagem: String)
 signal status_temporario(mensagem: String)
 signal horario_alterado(estado: int)
+signal jogador_capturado_na_noite(monstro: Node3D)
+signal documento_lido_registrado(documento_id: StringName)
 
 enum ModoNoturno { NENHUM = 0, VIGILIA_DOMESTICA = 1, TAREFAS_PENDENTES = 2 }
 var modo_noturno: int = ModoNoturno.NENHUM
@@ -24,16 +26,24 @@ var horario_atual: int = 0
 var tempo_dia_restante: float = 180.0
 
 const GERENCIADOR_MEDICAMENTOS := preload("res://scripts/core/gerenciador_medicamentos.gd")
+const DIRETOR_EVENTOS_NOITE_SCRIPT := preload("res://scripts/core/diretor_eventos_noite.gd")
+const CENA_RONDANTE_FAZENDA := preload("res://scenes/monsters/rondante_fazenda.tscn")
 
 var pontos_vigilia_ativos: bool = false
 var recargas_luz_disponiveis: int = 2
 var rastros_investigativos: Array[Node3D] = []
 
 var gerenciador_medicamentos: GerenciadorMedicamentos = null
+var documentos_lidos: Array[StringName] = []
+var jornal_silhueta_lido: bool = false
+var estagio_introducao_silhueta: int = Silhueta.EstagioIntroducao.NAO_INICIADA
 
 @export_category("Referências da Cena")
 @export var label_tarefas: Label
 @export var silhueta: Node3D
+@export var rondante: Node3D
+@export var diretor_eventos_noite: Node
+@export var ponto_intro_silhueta: Node3D
 @export var camera_player: Camera3D
 @export var environment_noite: WorldEnvironment
 @export var radio: Node3D
@@ -54,8 +64,80 @@ func _ready() -> void:
 		gerenciador_medicamentos.name = "GerenciadorMedicamentos"
 		add_child(gerenciador_medicamentos)
 
+	_garantir_diretor_eventos_noite()
+	_garantir_rondante_cena()
 	_garantir_esconderijo_cena()
+	_conectar_silhueta_introducao()
 	iniciar_novo_dia()
+
+
+func _conectar_silhueta_introducao() -> void:
+	if silhueta != null and silhueta.has_signal("introducao_etapa_concluida"):
+		if not silhueta.introducao_etapa_concluida.is_connected(_ao_concluir_etapa_silhueta):
+			silhueta.introducao_etapa_concluida.connect(_ao_concluir_etapa_silhueta)
+
+
+func _ao_concluir_etapa_silhueta(etapa: int) -> void:
+	if etapa == int(Silhueta.EstagioIntroducao.ETAPA_A_APARICAO_PASSIVA):
+		estagio_introducao_silhueta = Silhueta.EstagioIntroducao.ETAPA_B_TESTE_LANTERNA
+	elif etapa == int(Silhueta.EstagioIntroducao.ETAPA_B_TESTE_LANTERNA):
+		estagio_introducao_silhueta = Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL
+
+
+func registrar_documento_lido(documento_id: StringName) -> void:
+	if documento_id != &"" and not documentos_lidos.has(documento_id):
+		documentos_lidos.append(documento_id)
+	if documento_id == &"jornal_silhueta":
+		jornal_silhueta_lido = true
+		if horario_atual == 1 and estagio_introducao_silhueta == Silhueta.EstagioIntroducao.NAO_INICIADA and silhueta != null:
+			_ativar_silhueta_com_estagio(Silhueta.EstagioIntroducao.ETAPA_A_APARICAO_PASSIVA)
+	documento_lido_registrado.emit(documento_id)
+
+
+func _ativar_silhueta_com_estagio(etapa: int) -> void:
+	if silhueta == null:
+		return
+	estagio_introducao_silhueta = etapa
+	silhueta.visible = true
+	silhueta.process_mode = PROCESS_MODE_INHERIT
+	if "camera" in silhueta and camera_player:
+		silhueta.camera = camera_player
+	if etapa == Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL:
+		if "estagio_introducao" in silhueta:
+			silhueta.estagio_introducao = Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL
+		if silhueta.has_method("ativar"):
+			silhueta.ativar()
+	elif silhueta.has_method("iniciar_etapa_introducao"):
+		silhueta.iniciar_etapa_introducao(etapa, ponto_intro_silhueta)
+	elif silhueta.has_method("ativar"):
+		silhueta.ativar()
+
+
+func _garantir_diretor_eventos_noite() -> void:
+	if diretor_eventos_noite != null:
+		return
+	diretor_eventos_noite = get_node_or_null("DiretorEventosNoite")
+	if diretor_eventos_noite == null and get_parent() != null:
+		diretor_eventos_noite = get_parent().get_node_or_null("DiretorEventosNoite")
+	if diretor_eventos_noite == null:
+		diretor_eventos_noite = DIRETOR_EVENTOS_NOITE_SCRIPT.new()
+		diretor_eventos_noite.name = "DiretorEventosNoite"
+		add_child(diretor_eventos_noite)
+
+
+func _garantir_rondante_cena() -> void:
+	if rondante != null:
+		return
+	if get_parent() != null:
+		rondante = get_parent().get_node_or_null("RondanteFazenda") as Node3D
+	if rondante == null:
+		rondante = CENA_RONDANTE_FAZENDA.instantiate() as Node3D
+		rondante.name = "RondanteFazenda"
+		rondante.position = Vector3(8.0, 1.0, 28.0)
+		if get_parent() != null:
+			get_parent().call_deferred("add_child", rondante)
+		else:
+			add_child(rondante)
 
 
 func _garantir_esconderijo_cena() -> void:
@@ -111,12 +193,24 @@ func iniciar_novo_dia() -> void:
 		mult_t = gerenciador_medicamentos.obter_modificador("mult_tempo_dia", 0.0)
 	tempo_dia_restante = maxf(30.0, duracao_dia_segundos * (1.0 + mult_t))
 
+	if dia_atual > 1 and estagio_introducao_silhueta != Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL:
+		estagio_introducao_silhueta = Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL
+
 	# Desativa e esconde a silhueta no começo do dia
 	if silhueta:
 		silhueta.visible = false
 		silhueta.process_mode = PROCESS_MODE_DISABLED
 		if silhueta.has_method("desativar"):
 			silhueta.desativar()
+
+	if rondante:
+		rondante.visible = false
+		rondante.process_mode = PROCESS_MODE_DISABLED
+		if rondante.has_method("desativar"):
+			rondante.desativar()
+
+	if diretor_eventos_noite and diretor_eventos_noite.has_method("desativar"):
+		diretor_eventos_noite.desativar()
 
 	# Reseta a iluminação para DIA
 	if environment_noite and environment_noite.has_method("mudar_horario"):
@@ -237,14 +331,38 @@ func iniciar_evento_terror() -> void:
 	horario_alterado.emit(2)
 
 	if silhueta:
-		silhueta.visible = true
-		silhueta.process_mode = PROCESS_MODE_INHERIT
-		if "camera" in silhueta and camera_player:
-			silhueta.camera = camera_player
-		if silhueta.has_method("ativar"):
-			silhueta.ativar()
+		_conectar_silhueta_introducao()
+		if estagio_introducao_silhueta == Silhueta.EstagioIntroducao.NAO_INICIADA and dia_atual <= 1:
+			_ativar_silhueta_com_estagio(Silhueta.EstagioIntroducao.ETAPA_A_APARICAO_PASSIVA)
+		elif estagio_introducao_silhueta == Silhueta.EstagioIntroducao.ETAPA_B_TESTE_LANTERNA:
+			_ativar_silhueta_com_estagio(Silhueta.EstagioIntroducao.ETAPA_B_TESTE_LANTERNA)
+		else:
+			_ativar_silhueta_com_estagio(Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL)
+
+	if rondante:
+		rondante.visible = true
+		rondante.process_mode = PROCESS_MODE_INHERIT
+		if rondante.has_method("ativar"):
+			rondante.ativar()
+
+	if diretor_eventos_noite and diretor_eventos_noite.has_method("ativar"):
+		diretor_eventos_noite.ativar()
 
 	noite_iniciada.emit()
+
+
+func registrar_captura_monstro(monstro: Node3D, player: Player) -> void:
+	if player != null and player.esta_em_interacao_sequencia():
+		player.cancelar_interacao_sequencia()
+	if diretor_eventos_noite != null and diretor_eventos_noite.has_method("registrar_alivio_pos_susto"):
+		diretor_eventos_noite.registrar_alivio_pos_susto()
+	if get_tree() != null and get_tree().current_scene != null:
+		for n in get_tree().current_scene.find_children("*", "FiltroDelusioControlador", true, false):
+			if n.has_method("registrar_impulso_tensao"):
+				n.registrar_impulso_tensao(0.55)
+				break
+	status_temporario.emit("Você foi alcançado na escuridão! Recue para um abrigo!")
+	jogador_capturado_na_noite.emit(monstro)
 
 
 func tentar_dormir() -> void:

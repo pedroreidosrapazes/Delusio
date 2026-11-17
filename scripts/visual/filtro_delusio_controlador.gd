@@ -70,9 +70,9 @@ func definir_estado_horario(estado: int, imediato: bool = true) -> void:
 			_peso_noite_alvo = 0.35
 			_niveis_cor_alvo = 28.0
 		2: # NOITE
-			_tensao_base_horario = 0.48
+			_tensao_base_horario = 0.32
 			_peso_noite_alvo = 1.0
-			_niveis_cor_alvo = 24.0
+			_niveis_cor_alvo = 28.0
 
 	if imediato:
 		peso_noite_atual = _peso_noite_alvo
@@ -98,8 +98,17 @@ func calcular_tensao_silhueta() -> float:
 	var dir_olhar := -cam.global_transform.basis.z.normalized()
 	var dir_para_silhueta := (pos_sil - pos_cam).normalized()
 	var alinhamento := maxf(0.0, dir_olhar.dot(dir_para_silhueta))
+	var tensao_base := clampf(prox * 0.25 + (prox * alinhamento) * 0.20, 0.0, 0.45)
 
-	return clampf(prox * 0.25 + (prox * alinhamento) * 0.20, 0.0, 0.45)
+	var bonus_estado := 0.0
+	if "estado_atual" in gerente.silhueta:
+		match int(gerente.silhueta.estado_atual):
+			3: # AMEACA_LANTERNA
+				bonus_estado = 0.15
+			5, 6: # INVESTIDA, CAPTURA
+				bonus_estado = 0.30
+
+	return clampf(tensao_base + bonus_estado, 0.0, 0.60)
 
 
 func _process(delta: float) -> void:

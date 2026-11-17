@@ -1,6 +1,6 @@
 # Fluxo PB: atlas, máscara e material de inspeção
 
-Scripts para Blender 5.2+; testados no Blender 5.2.2. O atlas do exemplo é uma cópia independente em `assets/estilo_pb/radio_atlas_demo_input.png`. A arte original em `casa/` e os modelos do jogo ficam intactos.
+Scripts para Blender 5.2+; testados no Blender 5.2.2. O atlas do exemplo é uma cópia independente em `assets/estilo_pb/radio_atlas_demo_input.png`. A arte original em `assets/environment/casa/` e os modelos do jogo ficam intactos.
 
 ## Extrair tons de cinza e linhas
 

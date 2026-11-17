@@ -89,9 +89,12 @@ void fragment() {
 
 	float mascara_protegida = clamp(mascara_amarelo + mascara_vermelho + mascara_destaque_pb, 0.0, 1.0);
 
-	// Tom noturno frio com drenagem gradual de saturação
-	vec3 cor_desaturada = lum * cor_fria_noite;
-	float drenagem = clamp(peso_noite * 0.75 + nivel_tensao * 0.55, 0.0, 0.88);
+	// Tom noturno frio com preservação de luminância e piso lunar suave nas sombras
+	float lum_fria = max(dot(cor_fria_noite, vec3(0.299, 0.587, 0.114)), 0.001);
+	vec3 tom_frio_normalizado = (cor_fria_noite / lum_fria) * 0.90;
+	vec3 shadow_lift = cor_fria_noite * (0.045 * peso_noite * (1.0 - smoothstep(0.0, 0.35, lum)));
+	vec3 cor_desaturada = lum * tom_frio_normalizado + shadow_lift;
+	float drenagem = clamp(peso_noite * 0.68 + nivel_tensao * 0.45, 0.0, 0.85);
 	cor_base = mix(cor_base, mix(cor_base, cor_desaturada, drenagem), 1.0 - mascara_protegida);
 
 	// Dithering ordenado Bayer 4x4 + Quantização de cor
@@ -103,14 +106,16 @@ void fragment() {
 	float ruido = fract(sin(dot(FRAGCOORD.xy, vec2(12.9898, 78.233)) + fract(TIME * 23.17)) * 43758.5453);
 	cor_base += (ruido - 0.5) * intensidade_grao;
 
-	// Vinheta elíptica que se estreita com a tensão
-	float vinheta_fator = forca_vinheta * (1.0 + nivel_tensao * 0.65);
-	float vinheta = smoothstep(0.90, 0.28, dist_centro * vinheta_fator);
-	cor_base *= clamp(vinheta, 0.0, 1.0);
+	// Vinheta elíptica suave que se estreita com a tensão sem fechar o centro útil
+	float vinheta_fator = forca_vinheta * (1.0 + nivel_tensao * 0.35);
+	float vinheta = smoothstep(0.95, 0.38, dist_centro * vinheta_fator);
+	cor_base *= mix(0.22, 1.0, clamp(vinheta, 0.0, 1.0));
 
-	// Ajuste de brilho final global e local
+	// Ajuste de brilho final global e local (com resposta perceptível nas sombras)
 	float fator_ajuste = (ajuste_brilho > 0.01) ? ajuste_brilho : 1.0;
-	cor_base *= fator_ajuste * brilho_local;
+	float ganho_brilho = fator_ajuste * brilho_local;
+	float lift_brilho = max(0.0, ganho_brilho - 1.0) * 0.08 * (1.0 - mascara_destaque_pb);
+	cor_base = (cor_base + vec3(lift_brilho)) * ganho_brilho;
 
 	COLOR = vec4(clamp(cor_base, 0.0, 1.0), 1.0);
 }

@@ -10,7 +10,7 @@ const CATALOGO: Dictionary = {
 	&"med_1_oval": {
 		"id": &"med_1_oval",
 		"nome": "Comprimido Oval Laranja",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 1 - OVAL.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 1 - OVAL.blend",
 		"buff": "Velocidade de caminhada +",
 		"debuff": "Tensão noturna -",
 		"massa": 1.0,
@@ -21,7 +21,7 @@ const CATALOGO: Dictionary = {
 	&"med_1_oval_quebrado": {
 		"id": &"med_1_oval_quebrado",
 		"nome": "Comprimido Oval Partido",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 1 - OVAL QUEBRADO.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 1 - OVAL QUEBRADO.blend",
 		"buff": "Velocidade de caminhada +",
 		"debuff": "Estabilidade no esconderijo --",
 		"massa": 0.7,
@@ -32,7 +32,7 @@ const CATALOGO: Dictionary = {
 	&"med_1_pilula": {
 		"id": &"med_1_pilula",
 		"nome": "Cápsula Bicolor Vermelha",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 1 - PÍLULA.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 1 - PÍLULA.blend",
 		"buff": "Velocidade de caminhada ++",
 		"debuff": "Duração do dia --",
 		"massa": 0.55,
@@ -43,7 +43,7 @@ const CATALOGO: Dictionary = {
 	&"med_1_redondo": {
 		"id": &"med_1_redondo",
 		"nome": "Drágea Amarela",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 1 - REDONDO.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 1 - REDONDO.blend",
 		"buff": "Fôlego de corrida +",
 		"debuff": "Alcance da lanterna -",
 		"massa": 1.1,
@@ -54,7 +54,7 @@ const CATALOGO: Dictionary = {
 	&"med_2_oval": {
 		"id": &"med_2_oval",
 		"nome": "Comprimido Oval Azul Claro",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 2 - OVAL.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 2 - OVAL.blend",
 		"buff": "Tempo nas tarefas +",
 		"debuff": "Velocidade de caminhada -",
 		"massa": 1.3,
@@ -65,7 +65,7 @@ const CATALOGO: Dictionary = {
 	&"med_2_oval_quebrado": {
 		"id": &"med_2_oval_quebrado",
 		"nome": "Comprimido Oval Azul Partido",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 2 - OVAL QUEBRADO.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 2 - OVAL QUEBRADO.blend",
 		"buff": "Tempo nas tarefas +",
 		"debuff": "Calma ao errar tarefa --",
 		"massa": 0.85,
@@ -76,7 +76,7 @@ const CATALOGO: Dictionary = {
 	&"med_2_pilula": {
 		"id": &"med_2_pilula",
 		"nome": "Cápsula Bicolor Azul",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 2 - PÍLULA.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 2 - PÍLULA.blend",
 		"buff": "Tempo nas tarefas ++",
 		"debuff": "Discrição da lanterna --",
 		"massa": 0.60,
@@ -87,7 +87,7 @@ const CATALOGO: Dictionary = {
 	&"med_2_redondo": {
 		"id": &"med_2_redondo",
 		"nome": "Drágea Azul Escura",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 2 - REDONDO.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 2 - REDONDO.blend",
 		"buff": "Recuperação de erro nas tarefas +",
 		"debuff": "Visão periférica -",
 		"massa": 1.25,
@@ -98,7 +98,7 @@ const CATALOGO: Dictionary = {
 	&"med_3_oval": {
 		"id": &"med_3_oval",
 		"nome": "Comprimido Oval Verde",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 3 - OVAL.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 3 - OVAL.blend",
 		"buff": "Calma na escuridão +",
 		"debuff": "Agilidade nas tarefas -",
 		"massa": 1.4,
@@ -109,7 +109,7 @@ const CATALOGO: Dictionary = {
 	&"med_3_oval_quebrado": {
 		"id": &"med_3_oval_quebrado",
 		"nome": "Comprimido Oval Verde Partido",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 3 - OVAL QUEBRADO.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 3 - OVAL QUEBRADO.blend",
 		"buff": "Calma na escuridão +",
 		"debuff": "Passos silenciosos --",
 		"massa": 0.9,
@@ -120,7 +120,7 @@ const CATALOGO: Dictionary = {
 	&"med_3_pilula": {
 		"id": &"med_3_pilula",
 		"nome": "Cápsula Bicolor Verde",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 3 - PÍLULA.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 3 - PÍLULA.blend",
 		"buff": "Duração do dia ++",
 		"debuff": "Calma da Silhueta à noite --",
 		"massa": 0.65,
@@ -131,7 +131,7 @@ const CATALOGO: Dictionary = {
 	&"med_4_oval": {
 		"id": &"med_4_oval",
 		"nome": "Comprimido Preto Selado",
-		"modelo": "res://assets/medicamentos e placa/MEDICAMENTO 4 - OVAL.blend",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 4 - OVAL.blend",
 		"buff": "Tarefas do dia resolvidas +++",
 		"debuff": "Assombração noturna ---",
 		"massa": 1.8,

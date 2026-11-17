@@ -26,7 +26,7 @@ import/use_multiple_threads=false
 
 [gui]
 
-theme/custom_font="res://Delusio-Regular.ttf"
+theme/custom_font="res://assets/fonts/Delusio-Regular.ttf"
 
 [input]
 
