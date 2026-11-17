@@ -1,0 +1,239 @@
+[gd_scene format=3 uid="uid://bvgtbtr6ieq13"]
+
+[ext_resource type="Script" uid="uid://cf43mkd5hx52y" path="res://scripts/ui/menu_pausa.gd" id="1_pausa"]
+[ext_resource type="Shader" uid="uid://bq72cxgbnn4mp" path="res://shaders/post_process/vinheta_analogica_ui.gdshader" id="2_shader_vinheta"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vinheta_pausa"]
+shader = ExtResource("2_shader_vinheta")
+shader_parameter/intensidade_vinheta = 1.28
+shader_parameter/suavidade_vinheta = 0.58
+shader_parameter/intensidade_grao = 0.032
+shader_parameter/aberracao_cromatica = 0.0014
+shader_parameter/linhas_vhs = 0.018
+
+[node name="CanvasLayer_Pausa" type="CanvasLayer" unique_id=2018907858]
+process_mode = 3
+layer = 100
+
+[node name="MenuPausa" type="Control" parent="." unique_id=1832534948]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_pausa")
+
+[node name="FundoEscuro" type="ColorRect" parent="MenuPausa" unique_id=1933539604]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.027451, 0.027451, 0.0313726, 0.82)
+
+[node name="StatusCanto" type="MarginContainer" parent="MenuPausa" unique_id=2131408547]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 84.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 42
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 42
+
+[node name="VBoxStatus" type="VBoxContainer" parent="MenuPausa/StatusCanto" unique_id=1232472457]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="LabelStatusDia" type="Label" parent="MenuPausa/StatusCanto/VBoxStatus" unique_id=724262205]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.290196, 0.419608, 0.32549, 1)
+theme_override_font_sizes/font_size = 14
+text = "DIA 1  //  PERÍODO: DIURNO"
+
+[node name="LabelStatusTarefas" type="Label" parent="MenuPausa/StatusCanto/VBoxStatus" unique_id=221256338]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.721569, 0.52549, 0.231373, 1)
+theme_override_font_sizes/font_size = 12
+text = "FAZENDA ISOLADA  |  TAREFAS: 0 / 3"
+
+[node name="PainelPausa" type="PanelContainer" parent="MenuPausa" unique_id=978530632]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -140.0
+offset_right = 180.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxPausa" type="VBoxContainer" parent="MenuPausa/PainelPausa" unique_id=1997288425]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="TagPausa" type="Label" parent="MenuPausa/PainelPausa/VBoxPausa" unique_id=1042679499]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.290196, 0.419608, 0.32549, 1)
+theme_override_font_sizes/font_size = 12
+text = "[ SISTEMA INTERROMPIDO ]"
+
+[node name="TituloPausa" type="Label" parent="MenuPausa/PainelPausa/VBoxPausa" unique_id=1306282983]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
+theme_override_font_sizes/font_size = 36
+text = "PAUSA"
+
+[node name="HSeparator" type="HSeparator" parent="MenuPausa/PainelPausa/VBoxPausa" unique_id=1974522910]
+layout_mode = 2
+
+[node name="BotoesPausa" type="VBoxContainer" parent="MenuPausa/PainelPausa/VBoxPausa" unique_id=65793628]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BotaoContinuar" type="Button" parent="MenuPausa/PainelPausa/VBoxPausa/BotoesPausa" unique_id=447328850]
+custom_minimum_size = Vector2(280, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "CONTINUAR"
+alignment = 0
+
+[node name="BotaoConfiguracoes" type="Button" parent="MenuPausa/PainelPausa/VBoxPausa/BotoesPausa" unique_id=968232865]
+custom_minimum_size = Vector2(280, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "CONFIGURAÇÕES"
+alignment = 0
+
+[node name="BotaoMenuPrincipal" type="Button" parent="MenuPausa/PainelPausa/VBoxPausa/BotoesPausa" unique_id=898150698]
+custom_minimum_size = Vector2(280, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "MENU PRINCIPAL"
+alignment = 0
+
+[node name="PainelConfiguracoes" type="PanelContainer" parent="MenuPausa" unique_id=1513788576]
+visible = false
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = -180.0
+offset_right = 240.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxConfig" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes" unique_id=1749603558]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="HeaderConfig" type="HBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig" unique_id=1316725842]
+layout_mode = 2
+
+[node name="TituloConfig" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/HeaderConfig" unique_id=582248118]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
+theme_override_font_sizes/font_size = 26
+text = "CONFIGURAÇÕES"
+
+[node name="TagConfig" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/HeaderConfig" unique_id=1956941239]
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(0.290196, 0.419608, 0.32549, 1)
+theme_override_font_sizes/font_size = 12
+text = "[ OPÇÕES ]"
+
+[node name="HSeparator" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig" unique_id=443056194]
+layout_mode = 2
+
+[node name="SecaoAudio" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig" unique_id=766796559]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LabelAudio" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoAudio" unique_id=1517591563]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
+theme_override_font_sizes/font_size = 14
+text = "VOLUME GERAL: 100%"
+
+[node name="SliderAudio" type="HSlider" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoAudio" unique_id=1814305925]
+layout_mode = 2
+value = 100.0
+
+[node name="HSeparatorAudio" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig" unique_id=1304453221]
+layout_mode = 2
+
+[node name="SecaoTela" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig" unique_id=167428649]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SecaoTelaTitulo" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoTela" unique_id=372482802]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.721569, 0.52549, 0.231373, 1)
+theme_override_font_sizes/font_size = 12
+text = "EXIBIÇÃO E VÍDEO"
+
+[node name="CheckTelaCheia" type="CheckBox" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoTela" unique_id=2136020132]
+layout_mode = 2
+text = "TELA CHEIA"
+
+[node name="CheckVSync" type="CheckBox" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoTela" unique_id=97873445]
+layout_mode = 2
+text = "SINCRONIZAÇÃO VERTICAL (V-SYNC)"
+
+[node name="HSeparatorTela" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig" unique_id=799538597]
+layout_mode = 2
+
+[node name="SecaoBrilho" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig" unique_id=2098396690]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LabelBrilho" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoBrilho" unique_id=1677144831]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
+theme_override_font_sizes/font_size = 14
+text = "BRILHO / EXPOSIÇÃO: 1.00"
+
+[node name="SliderBrilho" type="HSlider" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoBrilho" unique_id=46115716]
+layout_mode = 2
+min_value = 0.5
+max_value = 1.5
+step = 0.05
+value = 1.0
+
+[node name="HSeparator2" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig" unique_id=486006899]
+layout_mode = 2
+
+[node name="BotaoVoltarPausa" type="Button" parent="MenuPausa/PainelConfiguracoes/VBoxConfig" unique_id=12702747]
+custom_minimum_size = Vector2(220, 40)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 16
+text = "VOLTAR"
+alignment = 0
+
+[node name="EfeitoVinhetaPausa" type="ColorRect" parent="MenuPausa" unique_id=2138263827]
+material = SubResource("ShaderMaterial_vinheta_pausa")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
