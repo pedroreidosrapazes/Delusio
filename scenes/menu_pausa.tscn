@@ -1,6 +1,15 @@
 [gd_scene format=3 uid="uid://pausamenu001"]
 
 [ext_resource type="Script" path="res://scripts/ui/menu_pausa.gd" id="1_pausa"]
+[ext_resource type="Shader" path="res://shaders/post_process/vinheta_analogica_ui.gdshader" id="2_shader_vinheta"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vinheta_pausa"]
+shader = ExtResource("2_shader_vinheta")
+shader_parameter/intensidade_vinheta = 1.28
+shader_parameter/suavidade_vinheta = 0.58
+shader_parameter/intensidade_grao = 0.032
+shader_parameter/aberracao_cromatica = 0.0014
+shader_parameter/linhas_vhs = 0.018
 
 [node name="CanvasLayer_Pausa" type="CanvasLayer"]
 process_mode = 3
@@ -22,120 +31,210 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
+color = Color(0.027451, 0.027451, 0.0313726, 0.82)
 
-[node name="PainelPausa" type="VBoxContainer" parent="MenuPausa"]
+[node name="StatusCanto" type="MarginContainer" parent="MenuPausa"]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -140.0
-offset_top = -120.0
-offset_right = 140.0
-offset_bottom = 120.0
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 84.0
 grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 14
-alignment = 1
+mouse_filter = 2
+theme_override_constants/margin_left = 42
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 42
 
-[node name="TituloPausa" type="Label" parent="MenuPausa/PainelPausa"]
+[node name="VBoxStatus" type="VBoxContainer" parent="MenuPausa/StatusCanto"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
-text = "PAUSA"
-horizontal_alignment = 1
+mouse_filter = 2
+theme_override_constants/separation = 4
 
-[node name="HSeparator" type="HSeparator" parent="MenuPausa/PainelPausa"]
+[node name="LabelStatusDia" type="Label" parent="MenuPausa/StatusCanto/VBoxStatus"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.290196, 0.419608, 0.32549, 1)
+theme_override_font_sizes/font_size = 14
+text = "DIA 1  //  PERÍODO: DIURNO"
 
-[node name="BotaoContinuar" type="Button" parent="MenuPausa/PainelPausa"]
-custom_minimum_size = Vector2(280, 42)
+[node name="LabelStatusTarefas" type="Label" parent="MenuPausa/StatusCanto/VBoxStatus"]
 layout_mode = 2
-text = "Continuar"
+theme_override_colors/font_color = Color(0.721569, 0.52549, 0.231373, 1)
+theme_override_font_sizes/font_size = 12
+text = "FAZENDA ISOLADA  |  TAREFAS: 0 / 3"
 
-[node name="BotaoConfiguracoes" type="Button" parent="MenuPausa/PainelPausa"]
-custom_minimum_size = Vector2(280, 42)
-layout_mode = 2
-text = "Configurações"
-
-[node name="BotaoMenuPrincipal" type="Button" parent="MenuPausa/PainelPausa"]
-custom_minimum_size = Vector2(280, 42)
-layout_mode = 2
-text = "Menu Principal"
-
-[node name="PainelConfiguracoes" type="VBoxContainer" parent="MenuPausa"]
-visible = false
+[node name="PainelPausa" type="PanelContainer" parent="MenuPausa"]
+custom_minimum_size = Vector2(360, 0)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -200.0
+offset_left = -180.0
 offset_top = -140.0
-offset_right = 200.0
+offset_right = 180.0
 offset_bottom = 140.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 16
-alignment = 1
 
-[node name="TituloConfig" type="Label" parent="MenuPausa/PainelConfiguracoes"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "CONFIGURAÇÕES"
-horizontal_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="MenuPausa/PainelConfiguracoes"]
-layout_mode = 2
-
-[node name="SecaoAudio" type="HBoxContainer" parent="MenuPausa/PainelConfiguracoes"]
+[node name="VBoxPausa" type="VBoxContainer" parent="MenuPausa/PainelPausa"]
 layout_mode = 2
 theme_override_constants/separation = 12
+alignment = 1
 
-[node name="LabelAudio" type="Label" parent="MenuPausa/PainelConfiguracoes/SecaoAudio"]
-custom_minimum_size = Vector2(130, 0)
+[node name="TagPausa" type="Label" parent="MenuPausa/PainelPausa/VBoxPausa"]
 layout_mode = 2
-text = "Volume Geral"
+theme_override_colors/font_color = Color(0.290196, 0.419608, 0.32549, 1)
+theme_override_font_sizes/font_size = 12
+text = "[ SISTEMA INTERROMPIDO ]"
 
-[node name="SliderAudio" type="HSlider" parent="MenuPausa/PainelConfiguracoes/SecaoAudio"]
+[node name="TituloPausa" type="Label" parent="MenuPausa/PainelPausa/VBoxPausa"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
+theme_override_font_sizes/font_size = 36
+text = "PAUSA"
+
+[node name="HSeparator" type="HSeparator" parent="MenuPausa/PainelPausa/VBoxPausa"]
+layout_mode = 2
+
+[node name="BotoesPausa" type="VBoxContainer" parent="MenuPausa/PainelPausa/VBoxPausa"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BotaoContinuar" type="Button" parent="MenuPausa/PainelPausa/VBoxPausa/BotoesPausa"]
+custom_minimum_size = Vector2(280, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "CONTINUAR"
+alignment = 0
+
+[node name="BotaoConfiguracoes" type="Button" parent="MenuPausa/PainelPausa/VBoxPausa/BotoesPausa"]
+custom_minimum_size = Vector2(280, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "CONFIGURAÇÕES"
+alignment = 0
+
+[node name="BotaoMenuPrincipal" type="Button" parent="MenuPausa/PainelPausa/VBoxPausa/BotoesPausa"]
+custom_minimum_size = Vector2(280, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "MENU PRINCIPAL"
+alignment = 0
+
+[node name="PainelConfiguracoes" type="PanelContainer" parent="MenuPausa"]
+visible = false
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = -180.0
+offset_right = 240.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxConfig" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="HeaderConfig" type="HBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+layout_mode = 2
+
+[node name="TituloConfig" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/HeaderConfig"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 4
+theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
+theme_override_font_sizes/font_size = 26
+text = "CONFIGURAÇÕES"
+
+[node name="TagConfig" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/HeaderConfig"]
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(0.290196, 0.419608, 0.32549, 1)
+theme_override_font_sizes/font_size = 12
+text = "[ OPÇÕES ]"
+
+[node name="HSeparator" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+layout_mode = 2
+
+[node name="SecaoAudio" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LabelAudio" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoAudio"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
+theme_override_font_sizes/font_size = 14
+text = "VOLUME GERAL: 100%"
+
+[node name="SliderAudio" type="HSlider" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoAudio"]
+layout_mode = 2
 step = 1.0
 value = 100.0
 
-[node name="SecaoTela" type="HBoxContainer" parent="MenuPausa/PainelConfiguracoes"]
+[node name="HSeparatorAudio" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
 layout_mode = 2
 
-[node name="CheckTelaCheia" type="CheckBox" parent="MenuPausa/PainelConfiguracoes/SecaoTela"]
+[node name="SecaoTela" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
 layout_mode = 2
-text = "Tela Cheia"
+theme_override_constants/separation = 6
 
-[node name="SecaoBrilho" type="HBoxContainer" parent="MenuPausa/PainelConfiguracoes"]
+[node name="SecaoTelaTitulo" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoTela"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_colors/font_color = Color(0.721569, 0.52549, 0.231373, 1)
+theme_override_font_sizes/font_size = 12
+text = "EXIBIÇÃO E VÍDEO"
 
-[node name="LabelBrilho" type="Label" parent="MenuPausa/PainelConfiguracoes/SecaoBrilho"]
-custom_minimum_size = Vector2(130, 0)
+[node name="CheckTelaCheia" type="CheckBox" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoTela"]
 layout_mode = 2
-text = "Brilho"
+text = "TELA CHEIA"
 
-[node name="SliderBrilho" type="HSlider" parent="MenuPausa/PainelConfiguracoes/SecaoBrilho"]
+[node name="CheckVSync" type="CheckBox" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoTela"]
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 4
+text = "SINCRONIZAÇÃO VERTICAL (V-SYNC)"
+
+[node name="HSeparatorTela" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+layout_mode = 2
+
+[node name="SecaoBrilho" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LabelBrilho" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoBrilho"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
+theme_override_font_sizes/font_size = 14
+text = "BRILHO / EXPOSIÇÃO: 1.00"
+
+[node name="SliderBrilho" type="HSlider" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoBrilho"]
+layout_mode = 2
 min_value = 0.5
 max_value = 1.5
 step = 0.05
 value = 1.0
 
-[node name="HSeparator2" type="HSeparator" parent="MenuPausa/PainelConfiguracoes"]
+[node name="HSeparator2" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
 layout_mode = 2
 
-[node name="BotaoVoltarPausa" type="Button" parent="MenuPausa/PainelConfiguracoes"]
-custom_minimum_size = Vector2(200, 38)
+[node name="BotaoVoltarPausa" type="Button" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+custom_minimum_size = Vector2(220, 40)
 layout_mode = 2
-size_flags_horizontal = 4
-text = "Voltar"
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 16
+text = "VOLTAR"
+alignment = 0
+
+[node name="EfeitoVinhetaPausa" type="ColorRect" parent="MenuPausa"]
+material = SubResource("ShaderMaterial_vinheta_pausa")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
