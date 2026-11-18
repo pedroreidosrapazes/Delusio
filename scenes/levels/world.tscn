@@ -15,6 +15,8 @@
 [ext_resource type="PackedScene" uid="uid://b7k4m2qarond1" path="res://scenes/monsters/rondante_fazenda.tscn" id="17_rond"]
 [ext_resource type="PackedScene" path="res://scenes/props/documento_mesa.tscn" id="18_docmesa"]
 [ext_resource type="PackedScene" path="res://scenes/props/jornal_mesa.tscn" id="19_jornalmesa"]
+[ext_resource type="PackedScene" uid="uid://cw7cp6fncyc8s" path="res://caixa_da_agua.tscn" id="20_caixa"]
+[ext_resource type="PackedScene" uid="uid://1aie1wcmikp6" path="res://scenes/props/fita_silver_tape.tscn" id="21_tape"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.45
@@ -38,6 +40,7 @@ height = 1.8
 
 [node name="GameManager" type="Node" parent="." unique_id=901289966 node_paths=PackedStringArray("label_tarefas", "silhueta", "rondante", "ponto_intro_silhueta", "camera_player", "environment_noite", "radio")]
 script = ExtResource("1_gbfbk")
+tarefas_totais = 4
 label_tarefas = NodePath("../Hud/LabelTarefas")
 silhueta = NodePath("../shilhueta")
 rondante = NodePath("../RondanteFazenda")
@@ -77,10 +80,10 @@ transform = Transform3D(1.4772635, 0, 0, 0, 2.2648096, 0, 0, 0, 1.8086593, 4.901
 camera = NodePath("../CharacterBody3D/Camera3D")
 look_threshold = 0.69
 
-[node name="RondanteFazenda" parent="." instance=ExtResource("17_rond")]
+[node name="RondanteFazenda" parent="." unique_id=706311458 instance=ExtResource("17_rond")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 28)
 
-[node name="PontoIntroSilhueta" type="Marker3D" parent="." groups=["ponto_intro_silhueta"]]
+[node name="PontoIntroSilhueta" type="Marker3D" parent="." unique_id=371815083 groups=["ponto_intro_silhueta"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1, 31)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=971834523]
@@ -158,8 +161,17 @@ shape = SubResource("BoxShape3D_qafjs")
 transform = Transform3D(0.14276285, 1.2747479e-09, -1.8194076, -0.03850324, 1.8245914, -0.0030212197, 1.819, 0.038621593, 0.14273088, -19.17308, 0.6936162, 33.199738)
 script = ExtResource("16_casa")
 
-[node name="DocumentoMesa" parent="Casa _final-col" instance=ExtResource("18_docmesa")]
+[node name="DocumentoMesa" parent="Casa _final-col" unique_id=821026920 instance=ExtResource("18_docmesa")]
 transform = Transform3D(0.531722, 0, 0.132573, 0, 0.548, 0, -0.132573, 0, 0.531722, 3.01, 0.3932, -0.74)
 
-[node name="JornalMesa" parent="Casa _final-col" instance=ExtResource("19_jornalmesa")]
+[node name="JornalMesa" parent="Casa _final-col" unique_id=1218078672 instance=ExtResource("19_jornalmesa")]
 transform = Transform3D(0.537933, 0, -0.104563, 0, 0.548, 0, 0.104563, 0, 0.537933, 3.02, 0.3932, -0.4)
+
+[node name="FitaSilverTape" parent="Casa _final-col" unique_id=1523596776 instance=ExtResource("21_tape")]
+transform = Transform3D(0.54999983, 2.7939677e-09, 0, 0, 0.55, 0, 1.1175871e-08, 2.3283064e-10, 0.55, 2.692627, 0.40692353, -0.43241215)
+
+[node name="caixa_da_agua" parent="." unique_id=1701788918 instance=ExtResource("20_caixa")]
+transform = Transform3D(-0.54487926, 0, 0.011471343, 0, 0.545, 0, -0.011471343, 0, -0.54487926, -23.482967, 0.47479892, 14.826624)
+
+[node name="fita_silver_tape" parent="." unique_id=326552408 instance=ExtResource("21_tape")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.2, 0.8, 15.5)

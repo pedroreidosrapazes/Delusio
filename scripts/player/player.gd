@@ -350,6 +350,39 @@ func adicionar_item(id: StringName, quantidade: int) -> int:
 	return quantidade - adicionado
 
 
+func possui_item(id: StringName, quantidade: int = 1) -> bool:
+	if id == &"" or quantidade <= 0:
+		return false
+	var total := 0
+	for indice in range(HOTBAR_SLOTS):
+		if _slots_hotbar[indice]["id"] == id:
+			total += int(_slots_hotbar[indice]["quantidade"])
+			if total >= quantidade:
+				return true
+	return false
+
+
+func consumir_item(id: StringName, quantidade: int = 1) -> bool:
+	if not possui_item(id, quantidade):
+		return false
+	var restante := quantidade
+	for indice in range(HOTBAR_SLOTS):
+		if _slots_hotbar[indice]["id"] == id:
+			var qtd_slot := int(_slots_hotbar[indice]["quantidade"])
+			var remover := mini(restante, qtd_slot)
+			qtd_slot -= remover
+			restante -= remover
+			if qtd_slot <= 0:
+				_slots_hotbar[indice]["id"] = &""
+				_slots_hotbar[indice]["quantidade"] = 0
+			else:
+				_slots_hotbar[indice]["quantidade"] = qtd_slot
+			if restante <= 0:
+				break
+	hotbar_alterada.emit()
+	return true
+
+
 func _aplicar_configuracao_lanterna() -> void:
 	if luz_lanterna == null:
 		return

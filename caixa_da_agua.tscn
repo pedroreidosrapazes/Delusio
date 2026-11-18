@@ -1,5 +1,43 @@
 [gd_scene format=3 uid="uid://cw7cp6fncyc8s"]
 
-[ext_resource type="PackedScene" uid="uid://blhwc6ni82c3o" path="res://caixaDaAgua.blend" id="1_58re8"]
+[ext_resource type="PackedScene" uid="uid://blhwc6ni82c3o" path="res://assets/environment/caixa_da_agua/caixaDaAgua.blend" id="1_58re8"]
+[ext_resource type="Script" path="res://scripts/interactables/caixa_da_agua_tarefa.gd" id="2_tarefa"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_vazamento"]
+size = Vector3(0.9, 1.1, 0.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_silvertape"]
+albedo_color = Color(0.74, 0.76, 0.78, 1)
+metallic = 0.55
+roughness = 0.3
+
+[sub_resource type="BoxMesh" id="BoxMesh_faixa_principal"]
+material = SubResource("StandardMaterial3D_silvertape")
+size = Vector3(0.34, 0.16, 0.37)
+
+[sub_resource type="BoxMesh" id="BoxMesh_faixa_cruzada"]
+material = SubResource("StandardMaterial3D_silvertape")
+size = Vector3(0.35, 0.1, 0.38)
 
 [node name="caixaDaAgua" unique_id=703435030 instance=ExtResource("1_58re8")]
+
+[node name="AnimationPlayer" parent="." index="2"]
+autoplay = "Anim_Vazamento"
+
+[node name="ConsertarCaixaAgua" type="StaticBody3D" parent="." index="3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.23525, 1.127067, -11.87406)
+script = ExtResource("2_tarefa")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ConsertarCaixaAgua" index="0"]
+shape = SubResource("BoxShape3D_vazamento")
+
+[node name="RemendoSilverTape" type="Node3D" parent="ConsertarCaixaAgua" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.173)
+visible = false
+
+[node name="FaixaPrincipal" type="MeshInstance3D" parent="ConsertarCaixaAgua/RemendoSilverTape" index="0"]
+mesh = SubResource("BoxMesh_faixa_principal")
+
+[node name="FaixaCruzada" type="MeshInstance3D" parent="ConsertarCaixaAgua/RemendoSilverTape" index="1"]
+transform = Transform3D(0.992546, -0.121869, 0, 0.121869, 0.992546, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("BoxMesh_faixa_cruzada")

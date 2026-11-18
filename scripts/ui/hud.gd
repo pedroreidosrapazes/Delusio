@@ -4,6 +4,7 @@ extends CanvasLayer
 ## Interface do Usuário (HUD).
 
 const CENA_LANTERNA: PackedScene = preload("res://scenes/props/flashlight.tscn")
+const CENA_SILVER_TAPE: PackedScene = preload("res://assets/props/fita_silver_tape/fita_silver_tape.blend")
 const FILTRO_DELUSIO_CONTROLADOR := preload("res://scripts/visual/filtro_delusio_controlador.gd")
 const MENU_ESCOLHA_MEDICAMENTOS := preload("res://scripts/ui/menu_escolha_medicamentos.gd")
 const PAINEL_LEITURA_DOCUMENTO := preload("res://scripts/ui/painel_leitura_documento.gd")
@@ -19,6 +20,7 @@ var _barra: Control
 var _slots: Array[Dictionary] = []
 var _temporizador: Timer
 var _viewport_icone: SubViewport
+var _viewport_icone_silver_tape: SubViewport
 var _estilo_normal: StyleBoxFlat
 var _estilo_selecionado: StyleBoxFlat
 
@@ -353,9 +355,16 @@ func _sincronizar_hotbar() -> void:
 		if id == &"lanterna":
 			_preparar_icone_lanterna()
 			(_slots[indice]["icone"] as TextureRect).texture = _viewport_icone.get_texture()
+		elif id == &"silver_tape":
+			_preparar_icone_silver_tape()
+			(_slots[indice]["icone"] as TextureRect).texture = _viewport_icone_silver_tape.get_texture()
 		else:
 			(_slots[indice]["icone"] as TextureRect).texture = null
 	_atualizar_destaque()
+	if _barra:
+		_barra.show()
+	if _temporizador:
+		_temporizador.start()
 
 
 func _ao_selecionar_slot(indice: int) -> void:
@@ -420,6 +429,36 @@ func _preparar_icone_lanterna() -> void:
 	camera_icone.fov = 35.0
 	mundo_icone.add_child(camera_icone)
 	camera_icone.look_at(Vector3(0.0, 0.0, -0.01))
+	camera_icone.current = true
+
+
+func _preparar_icone_silver_tape() -> void:
+	if _viewport_icone_silver_tape:
+		return
+	_viewport_icone_silver_tape = SubViewport.new()
+	_viewport_icone_silver_tape.name = "SilverTapeIconViewport"
+	_viewport_icone_silver_tape.size = Vector2i(128, 128)
+	_viewport_icone_silver_tape.transparent_bg = true
+	_viewport_icone_silver_tape.own_world_3d = true
+	_viewport_icone_silver_tape.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(_viewport_icone_silver_tape)
+
+	var mundo_icone := Node3D.new()
+	_viewport_icone_silver_tape.add_child(mundo_icone)
+	var modelo := CENA_SILVER_TAPE.instantiate() as Node3D
+	modelo.rotation_degrees = Vector3(25.0, 35.0, -10.0)
+	mundo_icone.add_child(modelo)
+
+	var luz := DirectionalLight3D.new()
+	luz.rotation_degrees = Vector3(-35.0, -25.0, 0.0)
+	luz.light_energy = 2.5
+	mundo_icone.add_child(luz)
+
+	var camera_icone := Camera3D.new()
+	camera_icone.position = Vector3(0.0, 0.04, 0.22)
+	camera_icone.fov = 40.0
+	mundo_icone.add_child(camera_icone)
+	camera_icone.look_at(Vector3.ZERO)
 	camera_icone.current = true
 
 
