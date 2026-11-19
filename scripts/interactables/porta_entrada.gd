@@ -15,6 +15,9 @@ extends Interactable
 var esta_aberta: bool = false
 var animando: bool = false
 
+func _init() -> void:
+	exigir_lanterna_a_noite = false
+
 func _ready() -> void:
 	prompt_interacao = "Abrir Porta"
 	_resolver_animation_player()

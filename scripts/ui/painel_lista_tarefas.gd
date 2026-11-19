@@ -151,15 +151,16 @@ func atualizar_lista() -> void:
 	var horario := gerente.horario_atual if gerente != null else 0
 
 	_label_titulo.text = "TAREFAS DO DIA %d" % dia
+	var hora_txt := gerente.obter_hora_formatada() if (gerente != null and gerente.has_method("obter_hora_formatada")) else "06:00"
 	match horario:
 		0:
-			_label_periodo.text = "[ DIURNO ]"
+			_label_periodo.text = "[ %s • DIURNO ]" % hora_txt
 			_label_periodo.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_ERVA)
 		1:
-			_label_periodo.text = "[ VESPERTINO ]"
+			_label_periodo.text = "[ %s • VESPERTINO ]" % hora_txt
 			_label_periodo.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_AMBAR)
 		2:
-			_label_periodo.text = "[ NOTURNO ]"
+			_label_periodo.text = "[ %s ]" % hora_txt
 			_label_periodo.add_theme_color_override("font_color", TemaSurvivalHorror.COR_DESTAQUE_VERMELHO)
 
 	var itens := _coletar_tarefas_do_dia()
@@ -174,10 +175,14 @@ func atualizar_lista() -> void:
 		for item in itens:
 			_adicionar_linha_tarefa(item["nome"], item["concluida"])
 
-	# Atualiza rodapé conforme conclusão das tarefas do dia
+	# Atualiza rodapé conforme conclusão das tarefas do dia e vigília
 	if totais > 0 and concluidas >= totais:
-		_label_rodape.text = "» Todas concluídas! Volte para casa e durma na cama."
-		_label_rodape.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_ERVA)
+		if gerente != null and gerente.exigir_conclusao_vigilia_para_dormir and gerente.modo_noturno == GameManager.ModoNoturno.VIGILIA_DOMESTICA and not gerente.vigilia_concluida:
+			_label_rodape.text = "» Vigília (%ds): espione a janela, fusível ou rastros." % int(ceilf(gerente.tempo_vigilia_restante))
+			_label_rodape.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_AMBAR)
+		else:
+			_label_rodape.text = "» Todas concluídas! Volte para casa e durma na cama."
+			_label_rodape.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_ERVA)
 	else:
 		var restantes := maxi(0, totais - concluidas)
 		_label_rodape.text = "Pendentes: %d de %d   |   [X] Ocultar" % [restantes, totais]

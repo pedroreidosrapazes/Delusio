@@ -8,6 +8,8 @@ extends Control
 @export_group("Cenas")
 ## Caminho da cena 3D de Gameplay (Fazenda).
 @export_file("*.tscn") var cena_jogo: String = "res://scenes/levels/world.tscn"
+@export_file("*.tscn") var cena_historia: String = "res://scenes/levels/world.tscn"
+@export var modo_historia_disponivel: bool = false
 
 @export_group("Atmosfera 3D da Tela Título")
 @export var amplitude_respiracao_pos: float = 0.014
@@ -17,9 +19,11 @@ extends Control
 @onready var menu_principal: MarginContainer = $MenuPrincipal
 @onready var menu_configuracoes: MarginContainer = $MenuConfiguracoes
 
-@onready var botao_jogar: Button = $MenuPrincipal/ColunaEsquerda/BotoesContainer/BotaoJogar
+@onready var botao_modo_endless: Button = $MenuPrincipal/ColunaEsquerda/BotoesContainer/BotaoModoEndless
+@onready var botao_modo_historia: Button = $MenuPrincipal/ColunaEsquerda/BotoesContainer/BotaoModoHistoria
 @onready var botao_configuracoes: Button = $MenuPrincipal/ColunaEsquerda/BotoesContainer/BotaoConfiguracoes
 @onready var botao_sair: Button = $MenuPrincipal/ColunaEsquerda/BotoesContainer/BotaoSair
+@onready var label_descricao_modo: Label = get_node_or_null("MenuPrincipal/ColunaEsquerda/LabelDescricaoModo") as Label
 
 @onready var audio_slider: HSlider = $MenuConfiguracoes/PainelFundo/VBoxContainer/PainelConfig/SecaoAudio/AudioSlider
 @onready var audio_label: Label = $MenuConfiguracoes/PainelFundo/VBoxContainer/PainelConfig/SecaoAudio/AudioLabel
@@ -55,6 +59,8 @@ func _ready() -> void:
 
 	# Aplica identidade visual Survival Horror sem alterar nenhuma fonte existente
 	TemaSurvivalHorror.aplicar_tema_completo(self)
+	if not modo_historia_disponivel and botao_modo_historia != null:
+		botao_modo_historia.add_theme_color_override("font_color", TemaSurvivalHorror.COR_TEXTO_APAGADO)
 
 	_conectar_sinais()
 	_inicializar_valores_ui()
@@ -82,10 +88,49 @@ func _process(delta: float) -> void:
 		luz_lampada.light_energy = maxf(0.2, energia_base_lampada * _fator_oscilacao_luz)
 
 
+func _atualizar_descricao_modo(texto: String, cor: Color) -> void:
+	if label_descricao_modo == null:
+		return
+	label_descricao_modo.text = texto
+	label_descricao_modo.add_theme_color_override("font_color", cor)
+
+
 func _conectar_sinais() -> void:
-	botao_jogar.pressed.connect(_on_botao_jogar_pressed)
+	botao_modo_endless.pressed.connect(_on_botao_modo_endless_pressed)
+	botao_modo_historia.pressed.connect(_on_botao_modo_historia_pressed)
 	botao_configuracoes.pressed.connect(_on_botao_configuracoes_pressed)
 	botao_sair.pressed.connect(_on_botao_sair_pressed)
+
+	var descricoes: Array[Dictionary] = [
+		{
+			"botao": botao_modo_endless,
+			"texto": "Modo Endless: sobreviva dia após dia na fazenda para testar e dominar todas as mecânicas.",
+			"cor": TemaSurvivalHorror.COR_TEXTO_NORMAL
+		},
+		{
+			"botao": botao_modo_historia,
+			"texto": "Modo História (em desenvolvimento): será construído depois usando a base do Modo Endless.",
+			"cor": TemaSurvivalHorror.COR_STATUS_AMBAR
+		},
+		{
+			"botao": botao_configuracoes,
+			"texto": "Ajuste volume, vídeo e calibragem de brilho.",
+			"cor": TemaSurvivalHorror.COR_TEXTO_APAGADO
+		},
+		{
+			"botao": botao_sair,
+			"texto": "Encerrar Delusio e voltar para a área de trabalho.",
+			"cor": TemaSurvivalHorror.COR_TEXTO_APAGADO
+		}
+	]
+	for item: Dictionary in descricoes:
+		var botao: Button = item["botao"] as Button
+		var texto: String = str(item["texto"])
+		var cor: Color = item["cor"] as Color
+		if botao == null:
+			continue
+		botao.mouse_entered.connect(func() -> void: _atualizar_descricao_modo(texto, cor))
+		botao.focus_entered.connect(func() -> void: _atualizar_descricao_modo(texto, cor))
 
 	audio_slider.value_changed.connect(_on_audio_slider_value_changed)
 	tela_cheia_check_box.toggled.connect(_on_tela_cheia_toggled)
@@ -127,11 +172,11 @@ func _inicializar_valores_ui() -> void:
 
 func _mostrar_menu_principal(animar: bool = true) -> void:
 	if animar:
-		TemaSurvivalHorror.animar_troca_paineis(menu_configuracoes, menu_principal, botao_jogar)
+		TemaSurvivalHorror.animar_troca_paineis(menu_configuracoes, menu_principal, botao_modo_endless)
 	else:
 		menu_principal.visible = true
 		menu_configuracoes.visible = false
-		botao_jogar.grab_focus()
+		botao_modo_endless.grab_focus()
 
 
 func _mostrar_configuracoes() -> void:
@@ -142,20 +187,47 @@ func _mostrar_configuracoes() -> void:
 # CALLBACKS - MENU PRINCIPAL
 # ==============================================================================
 
-func _on_botao_jogar_pressed() -> void:
-	var destino: String = cena_jogo
+func _carregar_cena_modo(caminho_preferido: String, contexto_erro: String) -> bool:
+	var destino: String = caminho_preferido
 
 	if not ResourceLoader.exists(destino) and ResourceLoader.exists("res://scenes/levels/world.tscn"):
 		destino = "res://scenes/levels/world.tscn"
 
 	if destino.is_empty():
-		push_error("MainMenu: Nenhuma cena de gameplay atribuída em 'cena_jogo'.")
-		return
+		push_error("MainMenu: Nenhuma cena de gameplay atribuída para %s." % contexto_erro)
+		return false
 
 	if ResourceLoader.exists(destino):
 		get_tree().change_scene_to_file(destino)
-	else:
-		push_error("MainMenu: A cena da fazenda não foi encontrada no caminho: " + destino)
+		return true
+
+	push_error("MainMenu: A cena de %s não foi encontrada no caminho: %s" % [contexto_erro, destino])
+	return false
+
+
+func iniciar_modo_endless() -> bool:
+	GameManager.definir_modo_jogo(GameManager.ModoJogo.ENDLESS)
+	return _carregar_cena_modo(cena_jogo, "Modo Endless")
+
+
+func iniciar_modo_historia() -> bool:
+	if not modo_historia_disponivel:
+		_atualizar_descricao_modo(
+			"Modo História ainda em desenvolvimento — jogue o Modo Endless para validar as mecânicas.",
+			TemaSurvivalHorror.COR_STATUS_AMBAR
+		)
+		return false
+
+	GameManager.definir_modo_jogo(GameManager.ModoJogo.HISTORIA)
+	return _carregar_cena_modo(cena_historia, "Modo História")
+
+
+func _on_botao_modo_endless_pressed() -> void:
+	iniciar_modo_endless()
+
+
+func _on_botao_modo_historia_pressed() -> void:
+	iniciar_modo_historia()
 
 
 func _on_botao_configuracoes_pressed() -> void:

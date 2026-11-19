@@ -215,6 +215,33 @@ func _posicionar_ponto_introducao() -> void:
 			frente_xz = frente_xz.normalized()
 		global_position = camera.global_position + frente_xz * 20.0
 		global_position.y = altura_padrao
+	var p := _obter_player()
+	if p != null:
+		_alinhar_para_alvo(p.global_position, 0.0)
+
+
+func _alinhar_para_alvo(pos_alvo: Vector3, delta: float = 0.0) -> void:
+	var d := Vector3(pos_alvo.x - global_position.x, 0.0, pos_alvo.z - global_position.z)
+	if d.length_squared() < 0.0001:
+		return
+	d = d.normalized()
+	var yaw_alvo := atan2(-d.x, -d.z)
+	if delta <= 0.0:
+		rotation.y = yaw_alvo
+	else:
+		rotation.y = lerp_angle(rotation.y, yaw_alvo, clampf(6.0 * delta, 0.0, 1.0))
+
+
+func _obter_fator_zona_breu(player: Player) -> float:
+	if player == null or get_tree() == null:
+		return 1.0
+	for z in get_tree().get_nodes_in_group("zona_breu_noturno"):
+		if z != null and is_instance_valid(z) and z.has_method("esta_jogador_dentro"):
+			if z.esta_jogador_dentro(player):
+				if "multiplicador_atracao_silhueta" in z:
+					return maxf(1.0, float(z.multiplicador_atracao_silhueta))
+				return 1.5
+	return 1.0
 
 
 func desativar() -> void:
@@ -399,7 +426,7 @@ func _process(delta: float) -> void:
 
 	var player: Player = _obter_player()
 	var lanterna_acesa: bool = (player != null and player.esta_com_lanterna_acesa())
-	fator_atracao_lanterna = 2.0 if lanterna_acesa else 1.0
+	fator_atracao_lanterna = (2.0 if lanterna_acesa else 1.0) * _obter_fator_zona_breu(player)
 
 	var mult_agressividade: float = _obter_mult_agressividade()
 	var mult_atracao: float = _obter_mult_atracao_lanterna()
@@ -415,6 +442,7 @@ func _process(delta: float) -> void:
 			var dir_xz := Vector3(delta_pos.x, 0.0, delta_pos.z)
 			if dir_xz.length_squared() > 0.0001:
 				var dir_p: Vector3 = dir_xz.normalized()
+				_alinhar_para_alvo(global_position + dir_p, delta)
 				global_position += dir_p * (velocidade_investida * mult_agressividade) * delta
 				global_position.y = altura_padrao
 			if _esta_no_alcance_captura(player):
@@ -599,6 +627,8 @@ func mover_para_novo_local() -> void:
 
 	global_position = melhor_posicao
 	altura_padrao = global_position.y
+	if camera != null:
+		_alinhar_para_alvo(camera.global_position, 0.0)
 
 
 func fade_out() -> void:

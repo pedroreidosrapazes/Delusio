@@ -43,11 +43,22 @@ func obter_config_sequencia() -> Dictionary:
 	}
 
 
+func esta_em_ambiente_iluminado() -> bool:
+	var tree := get_tree()
+	if tree == null:
+		return false
+	for casa in tree.get_nodes_in_group("casa_controlador"):
+		if casa != null and is_instance_valid(casa) and casa.has_method("esta_area_iluminada_interna"):
+			if casa.esta_area_iluminada_interna(self):
+				return true
+	return false
+
+
 func interagir(jogador: Node3D = null) -> void:
 	if not pode_interagir():
 		return
 
-	if exigir_lanterna_a_noite and jogador is Player:
+	if exigir_lanterna_a_noite and not esta_em_ambiente_iluminado() and jogador is Player:
 		var gerente := GameManager.instance
 		if gerente != null and gerente.horario_atual == 2:
 			var p := jogador as Player

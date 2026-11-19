@@ -3,6 +3,9 @@ extends Interactable
 
 ## Objeto interativo de dormir para avançar o dia.
 
+func _init() -> void:
+	exigir_lanterna_a_noite = false
+
 func _ready() -> void:
 	prompt_interacao = "Dormir"
 

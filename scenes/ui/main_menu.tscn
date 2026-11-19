@@ -135,7 +135,7 @@ theme_override_constants/margin_right = 72
 theme_override_constants/margin_bottom = 56
 
 [node name="ColunaEsquerda" type="VBoxContainer" parent="MenuPrincipal"]
-custom_minimum_size = Vector2(340, 0)
+custom_minimum_size = Vector2(390, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 8
@@ -170,37 +170,54 @@ custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 
 [node name="BotoesContainer" type="VBoxContainer" parent="MenuPrincipal/ColunaEsquerda"]
-custom_minimum_size = Vector2(300, 0)
+custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 8
 
-[node name="BotaoJogar" type="Button" parent="MenuPrincipal/ColunaEsquerda/BotoesContainer"]
-custom_minimum_size = Vector2(300, 44)
+[node name="BotaoModoEndless" type="Button" parent="MenuPrincipal/ColunaEsquerda/BotoesContainer"]
+custom_minimum_size = Vector2(360, 44)
 layout_mode = 2
 focus_neighbor_top = NodePath("../BotaoSair")
+focus_neighbor_bottom = NodePath("../BotaoModoHistoria")
+theme_override_font_sizes/font_size = 20
+text = "MODO ENDLESS"
+alignment = 0
+
+[node name="BotaoModoHistoria" type="Button" parent="MenuPrincipal/ColunaEsquerda/BotoesContainer"]
+custom_minimum_size = Vector2(360, 44)
+layout_mode = 2
+focus_neighbor_top = NodePath("../BotaoModoEndless")
 focus_neighbor_bottom = NodePath("../BotaoConfiguracoes")
 theme_override_font_sizes/font_size = 20
-text = "JOGAR"
+text = "MODO HISTÓRIA  [ EM BREVE ]"
 alignment = 0
 
 [node name="BotaoConfiguracoes" type="Button" parent="MenuPrincipal/ColunaEsquerda/BotoesContainer"]
-custom_minimum_size = Vector2(300, 44)
+custom_minimum_size = Vector2(360, 44)
 layout_mode = 2
-focus_neighbor_top = NodePath("../BotaoJogar")
+focus_neighbor_top = NodePath("../BotaoModoHistoria")
 focus_neighbor_bottom = NodePath("../BotaoSair")
 theme_override_font_sizes/font_size = 20
 text = "CONFIGURAÇÕES"
 alignment = 0
 
 [node name="BotaoSair" type="Button" parent="MenuPrincipal/ColunaEsquerda/BotoesContainer"]
-custom_minimum_size = Vector2(300, 44)
+custom_minimum_size = Vector2(360, 44)
 layout_mode = 2
 focus_neighbor_top = NodePath("../BotaoConfiguracoes")
-focus_neighbor_bottom = NodePath("../BotaoJogar")
+focus_neighbor_bottom = NodePath("../BotaoModoEndless")
 theme_override_font_sizes/font_size = 20
 text = "SAIR"
 alignment = 0
+
+[node name="LabelDescricaoModo" type="Label" parent="MenuPrincipal/ColunaEsquerda"]
+custom_minimum_size = Vector2(360, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.61, 0.58, 0.92)
+theme_override_font_sizes/font_size = 13
+text = "Sobreviva dia após dia na fazenda — todas as mecânicas ativas."
+autowrap_mode = 2
 
 [node name="EspacadorRodape" type="Control" parent="MenuPrincipal/ColunaEsquerda"]
 custom_minimum_size = Vector2(0, 40)

@@ -68,12 +68,16 @@ func _executar() -> void:
 	_verificar(not env.glow_enabled, "Glow deve iniciar desativado no DIA.")
 	print("OK: Estado DIA verificado.")
 
-	# 3. Progressão para TARDE (1) ao concluir 2 de 3 tarefas
+	# 3. Progressão para TARDE (1) ao concluir (tarefas_totais - 1) tarefas
 	print("\n--- [2] Teste Transição para TARDE (1) ---")
 	planta1.interagir() # Direto (sem player) para simulação rápida
 	planta2.interagir()
+	if gerente.tarefas_concluidas < gerente.tarefas_totais - 1:
+		planta3.interagir()
+	while gerente.tarefas_concluidas < gerente.tarefas_totais - 1:
+		gerente.concluir_tarefa()
 
-	_verificar(gerente.tarefas_concluidas == 2, "Deveriam haver 2 tarefas concluídas.")
+	_verificar(gerente.tarefas_concluidas == gerente.tarefas_totais - 1, "Deveriam haver %d tarefas concluídas." % (gerente.tarefas_totais - 1))
 	_verificar(gerente.horario_atual == 1, "GameManager deveria ter progredido para horário TARDE (1).")
 	_verificar(clima.estado_atual == 1, "ClimaAmbiente deveria estar em TARDE (1).")
 	_verificar(is_equal_approx(env.fog_density, 0.016), "Fog density incorreta para TARDE (esperado ~0.016, atual %f)." % env.fog_density)
@@ -86,11 +90,14 @@ func _executar() -> void:
 	_verificar(not env.glow_enabled, "Glow deve permanecer desativado na TARDE.")
 	print("OK: Estado TARDE verificado.")
 
-	# 4. Progressão para NOITE (2) ao concluir a 3ª tarefa
+	# 4. Progressão para NOITE (2) ao concluir a tarefa final
 	print("\n--- [3] Teste Transição para NOITE (2) ---")
-	planta3.interagir()
+	if not planta3.concluida:
+		planta3.interagir()
+	else:
+		gerente.concluir_tarefa("caixa_da_agua")
 
-	_verificar(gerente.tarefas_concluidas == 3, "Deveriam haver 3 tarefas concluídas.")
+	_verificar(gerente.tarefas_concluidas == gerente.tarefas_totais, "Deveriam haver %d tarefas concluídas." % gerente.tarefas_totais)
 	_verificar(gerente.horario_atual == 2, "GameManager deveria ter progredido para horário NOITE (2).")
 	_verificar(clima.estado_atual == 2, "ClimaAmbiente deveria estar em NOITE (2).")
 	_verificar(is_equal_approx(env.fog_density, 0.020), "Fog density incorreta para NOITE (esperado ~0.020, atual %f)." % env.fog_density)
@@ -126,6 +133,7 @@ func _executar() -> void:
 
 	# 6. Reset ao Dormir: Retorno a DIA (0)
 	print("\n--- [5] Teste de Reset ao Dormir ---")
+	gerente.concluir_vigilia_domestica()
 	gerente.tentar_dormir()
 
 	_verificar(gerente.dia_atual == 2, "Dia não avançou para 2 após dormir.")
