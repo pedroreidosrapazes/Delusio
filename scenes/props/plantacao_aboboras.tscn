@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/environment/plantacao/plantacao_aboboras.glb" id="1_glb"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_canteiro"]
+size = Vector3(3.3, 0.45, 2.15)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_poste"]
+size = Vector3(0.35, 1.6, 0.35)
+
+[node name="PlantacaoAboboras" type="Node3D"]
+
+[node name="Modelo" parent="." instance=ExtResource("1_glb")]
+
+[node name="ColisaoCanteiro" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D_Canteiro" type="CollisionShape3D" parent="ColisaoCanteiro"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.225, 0)
+shape = SubResource("BoxShape3D_canteiro")
+
+[node name="CollisionShape3D_Poste" type="CollisionShape3D" parent="ColisaoCanteiro"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.65, 0.8, 0)
+shape = SubResource("BoxShape3D_poste")

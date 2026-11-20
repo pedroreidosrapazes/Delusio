@@ -1,0 +1,44 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://rkc5d5kf6pw"
+path.s3tc="res://.godot/imported/plantacao_aboboras_M_Folha_Murcha_normal.png-b8d7ad5855fa9d492d1cc424143553ed.s3tc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
+}
+generator_parameters={
+"md5": "efb0a06fecc19febf4cb3ff71ea77e67"
+}
+
+[deps]
+
+source_file="res://assets/environment/plantacao/plantacao_aboboras_M_Folha_Murcha_normal.png"
+dest_files=["res://.godot/imported/plantacao_aboboras_M_Folha_Murcha_normal.png-b8d7ad5855fa9d492d1cc424143553ed.s3tc.ctex"]
+
+[params]
+
+compress/mode=2
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/uastc_level=0
+compress/rdo_quality_loss=0.0
+compress/hdr_compression=1
+compress/normal_map=1
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=1
+roughness/src_normal="res://assets/environment/plantacao/plantacao_aboboras_M_Folha_Murcha_normal.png"
+process/channel_remap/red=0
+process/channel_remap/green=1
+process/channel_remap/blue=2
+process/channel_remap/alpha=3
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=0

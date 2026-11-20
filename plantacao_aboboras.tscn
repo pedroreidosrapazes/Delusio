@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://cas4c1u8sq2kn"]
+
+[ext_resource type="PackedScene" uid="uid://bqj25gprceo4o" path="res://assets/environment/plantacao/plantacao_aboboras.glb" id="1_3ume2"]
+[ext_resource type="Script" path="res://scripts/interactables/plantacao_aboboras_tarefa.gd" id="2_tarefa"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_canteiro"]
+size = Vector3(3.3, 0.45, 2.15)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_poste"]
+size = Vector3(0.35, 1.6, 0.35)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_interacao"]
+size = Vector3(3.4, 1.4, 2.2)
+
+[node name="plantacao_aboboras" unique_id=53389048 instance=ExtResource("1_3ume2")]
+
+[node name="ColisaoCanteiro" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D_Canteiro" type="CollisionShape3D" parent="ColisaoCanteiro"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.225, 0)
+shape = SubResource("BoxShape3D_canteiro")
+
+[node name="CollisionShape3D_Poste" type="CollisionShape3D" parent="ColisaoCanteiro"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.65, 0.8, 0)
+shape = SubResource("BoxShape3D_poste")
+
+[node name="RegarPlantacao" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+script = ExtResource("2_tarefa")
+nome_exibicao = "Regar as plantas"
+duracao_animacao_regar = 5.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RegarPlantacao"]
+shape = SubResource("BoxShape3D_interacao")

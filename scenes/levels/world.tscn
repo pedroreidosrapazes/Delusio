@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" uid="uid://b7k4m2qarond1" path="res://scenes/monsters/rondante_fazenda.tscn" id="17_rond"]
 [ext_resource type="PackedScene" path="res://scenes/props/documento_mesa.tscn" id="18_docmesa"]
 [ext_resource type="PackedScene" uid="uid://6n30jxdxtpig" path="res://paiol.tscn" id="18_gs7m4"]
+[ext_resource type="PackedScene" uid="uid://cas4c1u8sq2kn" path="res://plantacao_aboboras.tscn" id="19_btahq"]
 [ext_resource type="PackedScene" path="res://scenes/props/jornal_mesa.tscn" id="19_jornalmesa"]
 [ext_resource type="PackedScene" uid="uid://cw7cp6fncyc8s" path="res://caixa_da_agua.tscn" id="20_caixa"]
 [ext_resource type="PackedScene" uid="uid://1aie1wcmikp6" path="res://scenes/props/fita_silver_tape.tscn" id="21_tape"]
@@ -179,3 +180,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.2, 0.8, 15.5)
 
 [node name="paiol" parent="." unique_id=2143289440 instance=ExtResource("18_gs7m4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8142166, 0.43442667, 49.19329)
+
+[node name="plantacao_aboboras" parent="." unique_id=53389048 instance=ExtResource("19_btahq")]
+transform = Transform3D(-1.8940264, 0, 0.060735278, 0, 1.895, 0, -0.060735278, 0, -1.8940264, 12.840673, 0.61059433, 33.899063)
