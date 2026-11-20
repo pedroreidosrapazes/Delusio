@@ -178,4 +178,4 @@ transform = Transform3D(-0.54487926, 0, 0.011471343, 0, 0.545, 0, -0.011471343, 
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.2, 0.8, 15.5)
 
 [node name="paiol" parent="." unique_id=2143289440 instance=ExtResource("18_gs7m4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8142166, 1, 49.19329)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8142166, 0.43442667, 49.19329)
