@@ -30,6 +30,9 @@ func _executar_interacao(_jogador: Node3D) -> void:
 	ja_usado = true
 	interacao_ativa = false
 	print("Animais alimentados com sucesso.")
+	var pai_fx: Node = get_parent() if get_parent() != null else self
+	BancoAudioDelusio.tocar_3d(pai_fx, &"tarefa_cocho", global_position, -2.0, 18.0)
+	FabricaParticulasDelusio.disparar_burst_tarefa(pai_fx, &"graos", global_position)
 
 	if GameManager.instance:
 		GameManager.instance.concluir_tarefa(id_tarefa)

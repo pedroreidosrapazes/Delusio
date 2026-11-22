@@ -19,6 +19,7 @@ var estabilidade_atual: float = 1.0
 var _pos_antes_entrar: Vector3 = Vector3.ZERO
 var _moveu_jogador_ao_entrar: bool = false
 var _aviso_luz_cooldown: float = 0.0
+var _timer_batimento: float = 0.0
 
 
 func _init() -> void:
@@ -61,6 +62,8 @@ func entrar(player: Player) -> void:
 	_pos_antes_entrar = player.global_position if player.is_inside_tree() else player.position
 	_moveu_jogador_ao_entrar = false
 	_aviso_luz_cooldown = 0.0
+	_timer_batimento = 0.0
+	BancoAudioDelusio.tocar_3d(self, &"armario_entrar", global_position, -3.0, 16.0)
 	prompt_interacao = "Sair de " + nome_esconderijo
 	if ponto_olhar != null and is_instance_valid(ponto_olhar) and player.is_inside_tree():
 		player.global_position = ponto_olhar.global_position
@@ -87,6 +90,8 @@ func sair(player: Player = null) -> void:
 
 	var p := player if player != null else jogador_escondido
 	ocupado = false
+	_timer_batimento = 0.0
+	BancoAudioDelusio.tocar_3d(self, &"armario_sair", global_position, -3.0, 16.0)
 	prompt_interacao = "Esconder-se em " + nome_esconderijo
 
 	if p != null:
@@ -126,6 +131,14 @@ func _process(delta: float) -> void:
 	if menor_dist <= 16.0:
 		prox = 1.0 - clampf(menor_dist / 16.0, 0.0, 1.0)
 	var intensidade := clampf(prox * (1.0 + (1.0 - estabilidade_atual) * 0.6), 0.0, 1.0)
+
+	if intensidade > 0.15:
+		_timer_batimento -= delta
+		if _timer_batimento <= 0.0:
+			_timer_batimento = lerpf(1.2, 0.52, intensidade)
+			BancoAudioDelusio.tocar_2d(self, &"batimento_cardiaco", lerpf(-12.0, -3.0, intensidade), 0.03)
+	else:
+		_timer_batimento = 0.0
 
 	if (intensidade > 0.05 or vazando) and get_tree() != null and get_tree().current_scene != null:
 		for f in get_tree().current_scene.find_children("*", "FiltroDelusioControlador", true, false):

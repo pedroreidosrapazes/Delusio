@@ -138,6 +138,7 @@ func abrir_porta() -> void:
 	if anim != "":
 		animando = true
 		prompt_interacao = "Fechar Porta"
+		BancoAudioDelusio.tocar_3d(self, &"porta_abrir", global_position, -3.0, 18.0)
 		animation_player.play(anim)
 		await animation_player.animation_finished
 		esta_aberta = true
@@ -158,6 +159,7 @@ func fechar_porta() -> void:
 	if anim_fechar != "":
 		animando = true
 		prompt_interacao = "Abrir Porta"
+		BancoAudioDelusio.tocar_3d(self, &"porta_fechar", global_position, -3.0, 18.0)
 		animation_player.play(anim_fechar)
 		await animation_player.animation_finished
 		esta_aberta = false
@@ -166,6 +168,7 @@ func fechar_porta() -> void:
 		# Se não houver animação dedicada de fechar, toca a de abrir em reverso
 		animando = true
 		prompt_interacao = "Abrir Porta"
+		BancoAudioDelusio.tocar_3d(self, &"porta_fechar", global_position, -3.0, 18.0)
 		animation_player.play_backwards(anim_abrir)
 		await animation_player.animation_finished
 		esta_aberta = false

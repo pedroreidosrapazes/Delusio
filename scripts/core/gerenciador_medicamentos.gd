@@ -128,6 +128,18 @@ const CATALOGO: Dictionary = {
 		"raro": false,
 		"mods": {"mult_tempo_dia": 0.20, "agressividade_silhueta": 0.25}
 	},
+	&"med_3_redondo": {
+		"id": &"med_3_redondo",
+		"nome": "Drágea Verde de Adrenalina",
+		"modelo": "res://assets/medicamentos_e_placa/MEDICAMENTO 3 - REDONDO.blend",
+		"cor_placeholder": Color("#3a9c5a"),
+		"buff": "Sobrevive a uma captura +",
+		"debuff": "Tensão noturna --",
+		"massa": 1.15,
+		"atrito": 0.48,
+		"raro": false,
+		"mods": {"segunda_chance_captura": 1.0, "offset_tensao_noite": 0.14}
+	},
 	&"med_4_oval": {
 		"id": &"med_4_oval",
 		"nome": "Comprimido Preto Selado",
@@ -242,6 +254,10 @@ func remover_trait(trait_id: StringName) -> bool:
 
 func obter_modificador(nome_mod: String, valor_padrao: float = 0.0) -> float:
 	return float(modificadores_atuais.get(nome_mod, valor_padrao))
+
+
+func possui_protecao_segunda_captura() -> bool:
+	return obter_modificador("segunda_chance_captura", 0.0) >= 1.0
 
 
 func limpar_efeitos_diarios() -> void:

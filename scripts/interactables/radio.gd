@@ -108,6 +108,16 @@ func _ready() -> void:
 	inicializar_radio()
 
 
+func _exit_tree() -> void:
+	if _tween_fade_voz != null and _tween_fade_voz.is_valid():
+		_tween_fade_voz.kill()
+	if audio_player != null:
+		audio_player.stop()
+		audio_player.stream = null
+	sons_jornal.clear()
+	audios_dias.clear()
+
+
 ## Garante inicialização mesmo quando o script é anexado dinamicamente via set_script().
 func inicializar_radio() -> void:
 	if _inicializado:
@@ -135,10 +145,11 @@ func _garantir_audio_player() -> void:
 	if audio_player == null:
 		audio_player = AudioStreamPlayer3D.new()
 		audio_player.name = "AudioPlayer"
-		audio_player.bus = &"Master"
+		audio_player.bus = BancoAudioDelusio.resolver_bus(&"SFX")
 		audio_player.max_distance = alcance_audicao_legenda
 		add_child(audio_player)
 	else:
+		audio_player.bus = BancoAudioDelusio.resolver_bus(&"SFX")
 		if audio_player.max_distance <= 0.0 or audio_player.max_distance < alcance_audicao_legenda:
 			audio_player.max_distance = alcance_audicao_legenda
 
@@ -222,6 +233,7 @@ func parar_radio() -> void:
 	var estava_ativo := esta_transmitindo() or (audio_player != null and audio_player.playing)
 	_interromper_transmissao_interna(true)
 	if estava_ativo:
+		BancoAudioDelusio.tocar_3d(self, &"radio_clique", global_position, -4.0, 14.0)
 		print("Rádio desligado.")
 
 
@@ -229,6 +241,7 @@ func parar_radio() -> void:
 func tocar_estatica_direcional(zona: String) -> void:
 	_garantir_audio_player()
 	ultima_zona_estatica = zona
+	BancoAudioDelusio.tocar_3d(self, &"radio_estatica", global_position, -2.0, 24.0)
 	estatica_direcional_tocada.emit(zona)
 	print("Rádio: Estática direcional indicando atividade perto de ", zona)
 
@@ -430,11 +443,45 @@ func _obter_dados_dia(dia: int) -> Dictionary:
 		if int(item.get("dia", -1)) == dia:
 			return item
 
+	if dia > transmissoes_dias.size() and not transmissoes_dias.is_empty():
+		return _gerar_boletim_endless(dia)
+
 	var idx := dia - 1
 	if idx >= 0 and idx < transmissoes_dias.size():
 		return transmissoes_dias[idx]
 
 	return {}
+
+
+func _gerar_boletim_endless(dia: int) -> Dictionary:
+	var rotacao: Array[Array] = [
+		[
+			"[RÁDIO]: ...estática forte... Rádio Vale Verde — registro automático do Dia %d." % dia,
+			"[RÁDIO]: Neblina densa cobrindo toda a fazenda ao entardecer. Conclua os reparos antes que escureça.",
+			"[RÁDIO]: Use os armários em silêncio se ouvir passos pesados perto da cerca."
+		],
+		[
+			"[RÁDIO]: ...frequência de emergência do Dia %d... oscilação na rede elétrica rural." % dia,
+			"[RÁDIO]: Se a energia da casa cair durante a noite, verifique o quadro de fusíveis externo.",
+			"[RÁDIO]: A mata ao sul continua fechada em breu absoluto — não avance sem lanterna."
+		],
+		[
+			"[RÁDIO]: ...sinal intermitente... boletim meteorológico isolado do Dia %d." % dia,
+			"[RÁDIO]: Atividade noturna intensificada ao redor do celeiro e do pátio.",
+			"[RÁDIO]: Vigie pela janela sem chamar atenção direta com o facho da lanterna."
+		],
+		[
+			"[RÁDIO]: ...transmissão repetidora automática... Dia %d na fazenda." % dia,
+			"[RÁDIO]: O cair da tarde está chegando mais rápido. Priorize horta, cocho, bomba e caixa d'água.",
+			"[RÁDIO]: Mantenha a lanterna desligada dentro da casa iluminada e ao se esconder."
+		]
+	]
+	var idx_ciclo := posmod(dia - 1, rotacao.size())
+	return {
+		"dia": dia,
+		"pausa_entre_frases": 1.6,
+		"frases": rotacao[idx_ciclo]
+	}
 
 
 func _atualizar_proximidade_ouvinte(forcar_emissao: bool) -> void:

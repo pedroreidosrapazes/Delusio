@@ -15,6 +15,8 @@ extends Interactable
 @export var caminho_remendo: NodePath = ^"RemendoSilverTape"
 
 var concluida: bool = false
+var _particulas_vazamento: GPUParticles3D = null
+var _audio_vazamento: AudioStreamPlayer3D = null
 
 
 func _init() -> void:
@@ -27,10 +29,27 @@ func _init() -> void:
 func _ready() -> void:
 	prompt_interacao = "Tampar vazamento"
 	add_to_group("tarefas")
+	if get_node_or_null("ParticulasVazamentoAgua") == null:
+		_particulas_vazamento = FabricaParticulasDelusio.criar_vazamento_agua()
+		add_child(_particulas_vazamento)
+	if _audio_vazamento == null:
+		_audio_vazamento = AudioStreamPlayer3D.new()
+		_audio_vazamento.name = "AudioVazamento3D"
+		_audio_vazamento.stream = BancoAudioDelusio.obter_sfx(&"vazamento_agua_loop")
+		_audio_vazamento.bus = BancoAudioDelusio.resolver_bus(&"SFX")
+		_audio_vazamento.max_distance = 14.0
+		_audio_vazamento.volume_db = -8.0
+		add_child(_audio_vazamento)
 	_aplicar_estado_visual(false)
 
 	if GameManager.instance and not GameManager.instance.dia_iniciado.is_connected(_ao_iniciar_novo_dia):
 		GameManager.instance.dia_iniciado.connect(_ao_iniciar_novo_dia)
+
+
+func _exit_tree() -> void:
+	if _audio_vazamento != null:
+		_audio_vazamento.stop()
+		_audio_vazamento.stream = null
 
 
 func pode_interagir() -> bool:
@@ -64,6 +83,9 @@ func _executar_interacao(jogador: Node3D) -> void:
 	interacao_ativa = false
 	_aplicar_estado_visual(true)
 	_definir_colisao_ativa(false)
+	var pai_fx: Node = get_parent() if get_parent() != null else self
+	BancoAudioDelusio.tocar_3d(pai_fx, &"fita_silver_tape", global_position, -2.0, 16.0)
+	FabricaParticulasDelusio.disparar_burst_tarefa(pai_fx, &"fita", global_position)
 
 	if GameManager.instance:
 		GameManager.instance.concluir_tarefa(id_tarefa)
@@ -95,6 +117,15 @@ func _aplicar_estado_visual(consertada: bool) -> void:
 	var rig_faiscas := get_node_or_null(caminho_rig_faiscas) as Node3D
 	if rig_faiscas:
 		rig_faiscas.visible = not consertada
+
+	if _particulas_vazamento != null:
+		_particulas_vazamento.emitting = not consertada
+
+	if _audio_vazamento != null:
+		if consertada:
+			_audio_vazamento.stop()
+		elif is_inside_tree() and _audio_vazamento.is_inside_tree() and not _audio_vazamento.playing:
+			_audio_vazamento.play()
 
 	var anim_player := get_node_or_null(caminho_animation_player) as AnimationPlayer
 	if anim_player:

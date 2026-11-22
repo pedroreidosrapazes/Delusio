@@ -79,6 +79,8 @@ var tempo_pausa_intro_restante: float = 0.0
 var tempo_recuperacao_captura: float = 0.0
 var _aguardando_etapa_b: bool = false
 var _mesh_origem_local: Vector3 = Vector3.ZERO
+var audio_silhueta: AudioStreamPlayer3D = null
+var particulas_sombra: GPUParticles3D = null
 
 
 func _ready() -> void:
@@ -91,6 +93,18 @@ func _ready() -> void:
 	altura_padrao = global_position.y
 	if mesh_root != null:
 		_mesh_origem_local = mesh_root.position
+	audio_silhueta = get_node_or_null("AudioSilhueta3D") as AudioStreamPlayer3D
+	if audio_silhueta == null:
+		audio_silhueta = AudioStreamPlayer3D.new()
+		audio_silhueta.name = "AudioSilhueta3D"
+		audio_silhueta.max_distance = 28.0
+		add_child(audio_silhueta)
+	audio_silhueta.bus = BancoAudioDelusio.resolver_bus(&"SFX")
+	audio_silhueta.stream = BancoAudioDelusio.obter_sfx(&"silhueta_ameaca")
+	particulas_sombra = get_node_or_null("ParticulasSombraSilhueta") as GPUParticles3D
+	if particulas_sombra == null:
+		particulas_sombra = FabricaParticulasDelusio.criar_sombra_silhueta()
+		add_child(particulas_sombra)
 	_preparar_materiais()
 	_atualizar_limites_distancia()
 	desativar()
@@ -117,6 +131,30 @@ func _mudar_estado(novo_estado: Estado) -> void:
 	estado_atual = novo_estado
 	if novo_estado != Estado.AMEACA_LANTERNA and mesh_root != null:
 		mesh_root.position = _mesh_origem_local
+	if particulas_sombra != null and is_instance_valid(particulas_sombra):
+		particulas_sombra.emitting = (
+			novo_estado == Estado.AMEACA_LANTERNA
+			or novo_estado == Estado.INVESTIDA
+			or novo_estado == Estado.RECUANDO
+		)
+	if audio_silhueta != null and is_instance_valid(audio_silhueta):
+		var id_som: StringName = &""
+		var pitch: float = 1.0
+		if novo_estado == Estado.AMEACA_LANTERNA:
+			id_som = &"silhueta_ameaca"
+			pitch = 0.96
+		elif novo_estado == Estado.INVESTIDA:
+			id_som = &"silhueta_investida"
+			pitch = 1.04
+		elif novo_estado == Estado.RECUANDO:
+			id_som = &"silhueta_recuo"
+			pitch = 1.0
+		if id_som != &"":
+			audio_silhueta.stream = BancoAudioDelusio.obter_sfx(id_som)
+			audio_silhueta.bus = BancoAudioDelusio.resolver_bus(&"SFX")
+			if is_inside_tree():
+				audio_silhueta.pitch_scale = pitch
+				audio_silhueta.play()
 	estado_alterado.emit(int(novo_estado), int(anterior))
 
 
@@ -253,6 +291,8 @@ func desativar() -> void:
 	_aguardando_etapa_b = false
 	tempo_pausa_intro_restante = 0.0
 	tempo_recuperacao_captura = 0.0
+	if particulas_sombra != null and is_instance_valid(particulas_sombra):
+		particulas_sombra.emitting = false
 	_mudar_estado(Estado.INATIVO)
 
 
@@ -267,7 +307,18 @@ func _obter_mult_agressividade() -> float:
 	var gerente := GameManager.instance
 	if gerente != null and ("gerenciador_medicamentos" in gerente) and gerente.gerenciador_medicamentos != null:
 		mult_agressividade += float(gerente.gerenciador_medicamentos.obter_modificador("agressividade_silhueta", 0.0))
+	if gerente != null and gerente.has_method("obter_parametros_dificuldade_dia"):
+		var params: Dictionary = gerente.obter_parametros_dificuldade_dia()
+		mult_agressividade *= float(params.get("mult_agressividade_silhueta", 1.0))
 	return maxf(0.25, mult_agressividade)
+
+
+func _obter_mult_velocidade_endless() -> float:
+	var gerente := GameManager.instance
+	if gerente != null and gerente.has_method("obter_parametros_dificuldade_dia"):
+		var params: Dictionary = gerente.obter_parametros_dificuldade_dia()
+		return maxf(1.0, float(params.get("mult_velocidade_monstros", 1.0)))
+	return 1.0
 
 
 func _obter_mult_atracao_lanterna() -> float:
@@ -413,6 +464,8 @@ func esta_no_feixe_lanterna(player: Player) -> bool:
 func _process(delta: float) -> void:
 	if not ativa or camera == null:
 		return
+	if GameManager.instance != null and GameManager.instance.jogo_encerrado:
+		return
 
 	if _aguardando_etapa_b:
 		tempo_pausa_intro_restante -= delta
@@ -443,7 +496,7 @@ func _process(delta: float) -> void:
 			if dir_xz.length_squared() > 0.0001:
 				var dir_p: Vector3 = dir_xz.normalized()
 				_alinhar_para_alvo(global_position + dir_p, delta)
-				global_position += dir_p * (velocidade_investida * mult_agressividade) * delta
+				global_position += dir_p * (velocidade_investida * mult_agressividade * _obter_mult_velocidade_endless()) * delta
 				global_position.y = altura_padrao
 			if _esta_no_alcance_captura(player):
 				realizar_captura(player)

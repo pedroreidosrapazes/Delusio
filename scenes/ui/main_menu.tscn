@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://b8ubk5slffeke"]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
-[ext_resource type="AudioStream" path="res://assets/audio/musicas/ost_3/OST-3 v6.mp3" id="2_musica_menu"]
+[ext_resource type="AudioStream" path="res://assets/audio/musicas/musica_tema/Delusio Tema Menu v1 Export 1.wav" id="2_musica_menu"]
 [ext_resource type="PackedScene" uid="uid://cq0vevrdh55bm" path="res://assets/environment/casa/Casa _final-col.glb" id="3_casa_menu"]
 [ext_resource type="Shader" path="res://shaders/post_process/vinheta_analogica_ui.gdshader" id="4_shader_vinheta"]
 
@@ -53,6 +53,7 @@ script = ExtResource("1_menu")
 [node name="MusicaMenu" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("2_musica_menu")
 autoplay = true
+bus = &"Musica"
 
 [node name="FundoBase" type="ColorRect" parent="."]
 layout_mode = 1
@@ -181,7 +182,7 @@ layout_mode = 2
 focus_neighbor_top = NodePath("../BotaoSair")
 focus_neighbor_bottom = NodePath("../BotaoModoHistoria")
 theme_override_font_sizes/font_size = 20
-text = "MODO ENDLESS"
+text = "DEBUG MODE"
 alignment = 0
 
 [node name="BotaoModoHistoria" type="Button" parent="MenuPrincipal/ColunaEsquerda/BotoesContainer"]
@@ -216,8 +217,15 @@ custom_minimum_size = Vector2(360, 40)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.61, 0.58, 0.92)
 theme_override_font_sizes/font_size = 13
-text = "Sobreviva dia após dia na fazenda — todas as mecânicas ativas."
+text = "Debug Mode: modo temporário de validação contínua das mecânicas do jogo."
 autowrap_mode = 2
+
+[node name="LabelRecordeEndless" type="Label" parent="MenuPrincipal/ColunaEsquerda"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.721569, 0.52549, 0.231373, 0.92)
+theme_override_font_sizes/font_size = 12
+text = "DEBUG MODE"
 
 [node name="EspacadorRodape" type="Control" parent="MenuPrincipal/ColunaEsquerda"]
 custom_minimum_size = Vector2(0, 40)

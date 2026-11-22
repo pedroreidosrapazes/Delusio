@@ -115,6 +115,8 @@ func _garantir_estrutura_nos() -> void:
 		audio_passos.name = "AudioPassos3D"
 		audio_passos.max_distance = 26.0
 		add_child(audio_passos)
+	audio_passos.bus = BancoAudioDelusio.resolver_bus(&"SFX")
+	audio_passos.stream = BancoAudioDelusio.obter_sfx(&"rondante_passo")
 
 	audio_vocalizacao = get_node_or_null("AudioVocalizacao3D") as AudioStreamPlayer3D
 	if audio_vocalizacao == null:
@@ -122,6 +124,8 @@ func _garantir_estrutura_nos() -> void:
 		audio_vocalizacao.name = "AudioVocalizacao3D"
 		audio_vocalizacao.max_distance = 32.0
 		add_child(audio_vocalizacao)
+	audio_vocalizacao.bus = BancoAudioDelusio.resolver_bus(&"SFX")
+	audio_vocalizacao.stream = BancoAudioDelusio.obter_sfx(&"rondante_vocalizacao")
 
 	visual_placeholder = get_node_or_null("VisualPlaceholder") as MeshInstance3D
 	if visual_placeholder == null:
@@ -246,6 +250,8 @@ func mudar_estado(novo_estado: Estado) -> void:
 	if novo_estado == Estado.PATRULHA:
 		_prioridade_som_atual = 0.0
 	_sincronizar_animacao_estado(novo_estado)
+	if novo_estado == Estado.BUSCA_FRUSTRADA and is_inside_tree():
+		BancoAudioDelusio.tocar_3d(self, &"rondante_bater_chao", global_position, 0.0, 30.0, 0.06)
 	estado_alterado.emit(int(novo_estado), int(anterior))
 
 
@@ -448,6 +454,8 @@ func receber_foco_lanterna(delta: float) -> void:
 		tempo_atordoado_restante = duracao_atordoamento_luz
 		cooldown_atordoamento_restante = cooldown_atordoamento_max
 		mudar_estado(Estado.ATORDOADO_LUZ)
+		if is_inside_tree():
+			BancoAudioDelusio.tocar_3d(self, &"rondante_atordoado", global_position, -1.0, 26.0, 0.05)
 		atordoado_por_luz.emit(duracao_atordoamento_luz)
 
 		# Dilema tático: usar a lanterna contra o Rondante atrai a Silhueta
@@ -508,11 +516,19 @@ func tem_linha_de_visao(player: Player) -> bool:
 	return pos_hit.distance_to(destino) <= 0.65
 
 
+func _obter_dificuldade_endless() -> Dictionary:
+	var gerente := GameManager.instance
+	if gerente != null and gerente.has_method("obter_parametros_dificuldade_dia"):
+		return gerente.obter_parametros_dificuldade_dia()
+	return {"mult_velocidade_monstros": 1.0, "mult_visao_rondante": 1.0}
+
+
 func pode_ver_jogador_sem_esconderijo(player: Player) -> bool:
 	if player == null or not ativa or estado_atual in [Estado.INATIVO, Estado.EM_ESPERA]:
 		return false
 	var cfg := _obter_config_efetiva()
-	var alcance := cfg.raio_visao * (1.25 if player.esta_com_lanterna_acesa() else 1.0)
+	var dif: Dictionary = _obter_dificuldade_endless()
+	var alcance := cfg.raio_visao * (1.25 if player.esta_com_lanterna_acesa() else 1.0) * float(dif.get("mult_visao_rondante", 1.0))
 	if _jogador_em_zona_breu(player):
 		alcance *= _obter_mult_visao_zona_breu()
 	var diff := player.global_position - global_position
@@ -557,8 +573,12 @@ func _process(delta: float) -> void:
 func processar_ia(delta: float) -> void:
 	if not ativa or estado_atual == Estado.INATIVO:
 		return
+	if GameManager.instance != null and GameManager.instance.jogo_encerrado:
+		return
 
 	var cfg := _obter_config_efetiva()
+	var dif: Dictionary = _obter_dificuldade_endless()
+	var mult_vel: float = float(dif.get("mult_velocidade_monstros", 1.0))
 	cooldown_atordoamento_restante = maxf(0.0, cooldown_atordoamento_restante - delta)
 
 	if estado_atual == Estado.EM_ESPERA:
@@ -585,7 +605,7 @@ func processar_ia(delta: float) -> void:
 				return
 
 			var alvo_patrulha := obter_waypoint_atual()
-			_mover_para(alvo_patrulha, cfg.velocidade_patrulha, delta)
+			_mover_para(alvo_patrulha, cfg.velocidade_patrulha * mult_vel, delta)
 			_processar_audio_passos(delta, cadencia_passos_patrulha)
 			if _distancia_xz(global_position, alvo_patrulha) <= 1.1:
 				avancar_waypoint_patrulha()
@@ -605,7 +625,7 @@ func processar_ia(delta: float) -> void:
 				_entrar_em_cacada(player, cfg)
 				return
 
-			var vel_investigar := (cfg.velocidade_patrulha + cfg.velocidade_perseguicao) * 0.5
+			var vel_investigar := ((cfg.velocidade_patrulha + cfg.velocidade_perseguicao) * 0.5) * mult_vel
 			if _distancia_xz(global_position, ultima_posicao_som) > 1.2:
 				_mover_para(ultima_posicao_som, vel_investigar, delta)
 				_processar_audio_passos(delta, cadencia_passos_patrulha * 0.85)
@@ -621,13 +641,13 @@ func processar_ia(delta: float) -> void:
 				if _esta_no_alcance_captura(player):
 					_iniciar_ataque_garras(player)
 					return
-				_mover_para(player.global_position, cfg.velocidade_perseguicao, delta)
+				_mover_para(player.global_position, cfg.velocidade_perseguicao * mult_vel, delta)
 				_processar_audio_passos(delta, cadencia_passos_cacada)
 				if _esta_no_alcance_captura(player):
 					_iniciar_ataque_garras(player)
 			else:
 				if _distancia_xz(global_position, ultima_posicao_vista_jogador) > 1.3:
-					_mover_para(ultima_posicao_vista_jogador, cfg.velocidade_perseguicao * 0.85, delta)
+					_mover_para(ultima_posicao_vista_jogador, cfg.velocidade_perseguicao * 0.85 * mult_vel, delta)
 					_processar_audio_passos(delta, cadencia_passos_cacada)
 					tempo_tolerancia_esconderijo_restante -= delta
 					if tempo_tolerancia_esconderijo_restante <= 0.0:
@@ -673,7 +693,7 @@ func processar_ia(delta: float) -> void:
 			if pode_ver_jogador(player):
 				_entrar_em_cacada(player, cfg)
 				return
-			_mover_para(_destino_retirada, cfg.velocidade_patrulha * 1.1, delta)
+			_mover_para(_destino_retirada, cfg.velocidade_patrulha * 1.1 * mult_vel, delta)
 			_processar_audio_passos(delta, cadencia_passos_patrulha)
 			if _distancia_xz(global_position, _destino_retirada) <= 1.5:
 				visible = false
@@ -697,6 +717,8 @@ func _iniciar_ataque_garras(player: Player) -> void:
 	if player != null:
 		_rotacionar_para_direcao(player.global_position - global_position, 0.0, velocidade_giro_cacada)
 	mudar_estado(Estado.ATAQUE_GARRAS)
+	if is_inside_tree():
+		BancoAudioDelusio.tocar_3d(self, &"rondante_garras", global_position, 1.0, 24.0, 0.06)
 	ataque_garras_iniciado.emit(player)
 
 

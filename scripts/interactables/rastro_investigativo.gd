@@ -13,6 +13,7 @@ signal rastro_inspecionado(rastro_id: StringName, descricao: String)
 
 var inspecionado: bool = false
 var _luz_reflexo: OmniLight3D = null
+var _particulas_rastro: GPUParticles3D = null
 
 
 func _init() -> void:
@@ -53,6 +54,12 @@ func _garantir_colisor_e_reflexo() -> void:
 		_luz_reflexo.shadow_enabled = false
 		add_child(_luz_reflexo)
 
+	_particulas_rastro = get_node_or_null("ParticulasRastro") as GPUParticles3D
+	if _particulas_rastro == null:
+		_particulas_rastro = FabricaParticulasDelusio.criar_poeira_rastro()
+		_particulas_rastro.position = Vector3(0.0, 0.25, 0.0)
+		add_child(_particulas_rastro)
+
 
 func pode_interagir() -> bool:
 	return super.pode_interagir() and not inspecionado
@@ -65,6 +72,9 @@ func _executar_interacao(_jogador: Node3D) -> void:
 	interacao_ativa = false
 	if _luz_reflexo != null:
 		_luz_reflexo.visible = false
+	if _particulas_rastro != null:
+		_particulas_rastro.emitting = false
+	BancoAudioDelusio.tocar_3d(self, &"rastro_inspecionar", global_position, -3.0, 16.0)
 	for child in find_children("*", "CollisionShape3D", true, false):
 		if child is CollisionShape3D:
 			(child as CollisionShape3D).disabled = true

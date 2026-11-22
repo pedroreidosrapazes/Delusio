@@ -38,7 +38,10 @@ func _executar() -> void:
 			var btn_sair := menu.get_node_or_null("MenuPrincipal/ColunaEsquerda/BotoesContainer/BotaoSair") as Button
 			var lbl_desc := menu.get_node_or_null("MenuPrincipal/ColunaEsquerda/LabelDescricaoModo") as Label
 
-			_verificar(btn_endless != null and btn_historia != null and btn_config != null and btn_sair != null, "Todos os botões principais (Endless, História, Config, Sair) devem existir em main_menu.tscn.")
+			_verificar(btn_endless != null and btn_historia != null and btn_config != null and btn_sair != null, "Todos os botões principais (Debug Mode, História, Config, Sair) devem existir em main_menu.tscn.")
+			if btn_endless != null:
+				_verificar(btn_endless.text == "DEBUG MODE", "BotaoModoEndless deve exibir 'DEBUG MODE' (atual: '%s')." % btn_endless.text)
+			_verificar(menu.label_recorde_endless != null and not menu.label_recorde_endless.visible, "LabelRecordeEndless deve permanecer oculto no menu principal.")
 			_verificar(lbl_desc != null, "LabelDescricaoModo deve existir abaixo dos botões principais.")
 			_verificar(not menu.modo_historia_disponivel, "Modo História deve iniciar bloqueado (modo_historia_disponivel == false).")
 
@@ -46,6 +49,7 @@ func _executar() -> void:
 			_verificar(not iniciou_historia, "iniciar_modo_historia() deve retornar false enquanto em desenvolvimento.")
 			if lbl_desc != null:
 				_verificar(lbl_desc.text.contains("Modo História ainda em desenvolvimento"), "LabelDescricaoModo deve explicar que o Modo História está em desenvolvimento.")
+				_verificar(lbl_desc.text.contains("Debug Mode"), "LabelDescricaoModo deve mencionar o Debug Mode.")
 
 			menu.queue_free()
 			await process_frame
@@ -62,9 +66,10 @@ func _executar() -> void:
 		var gerente := mundo.get_node_or_null("GameManager") as GameManager
 		_verificar(gerente != null, "GameManager deve existir em world.tscn.")
 		if gerente != null:
-			_verificar(gerente.modo_jogo == GameManager.ModoJogo.ENDLESS, "GameManager deve herdar ModoJogo.ENDLESS.")
-			_verificar(gerente.esta_em_modo_endless(), "esta_em_modo_endless() deve retornar true.")
-			_verificar(gerente.obter_nome_modo_jogo() == "MODO ENDLESS", "obter_nome_modo_jogo() deve retornar 'MODO ENDLESS'.")
+			_verificar(gerente.modo_jogo == GameManager.ModoJogo.ENDLESS, "GameManager deve herdar MODO_DEBUG.")
+			_verificar(gerente.esta_em_modo_debug(), "esta_em_modo_debug() deve retornar true.")
+			_verificar(gerente.esta_em_modo_endless(), "esta_em_modo_endless() deve manter compatibilidade retornando true.")
+			_verificar(gerente.obter_nome_modo_jogo() == "DEBUG MODE", "obter_nome_modo_jogo() deve retornar 'DEBUG MODE'.")
 
 		mundo.queue_free()
 		await process_frame
