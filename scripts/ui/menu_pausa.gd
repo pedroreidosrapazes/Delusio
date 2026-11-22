@@ -152,10 +152,11 @@ func _atualizar_status_fazenda() -> void:
 			2:
 				texto_periodo = "NOTURNO"
 
+	var nome_modo: String = gerente.obter_nome_modo_jogo() if (gerente != null and gerente.has_method("obter_nome_modo_jogo")) else "MODO ENDLESS"
 	if label_status_dia != null:
 		label_status_dia.text = "DIA %d  //  PERÍODO: %s" % [dia, texto_periodo]
 	if label_status_tarefas != null:
-		label_status_tarefas.text = "FAZENDA ISOLADA  |  TAREFAS: %d / %d" % [concluidas, totais]
+		label_status_tarefas.text = "%s  |  TAREFAS: %d / %d" % [nome_modo, concluidas, totais]
 
 
 func _tem_menu_modal_cursor_ativo() -> bool:

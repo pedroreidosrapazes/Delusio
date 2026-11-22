@@ -41,6 +41,9 @@ signal ataque_garras_iniciado(alvo: Player)
 @export_category("Visual 3D e Áudio")
 @export var usar_modelo_3d_real: bool = true
 @export var escala_modelo_3d: float = 0.28
+@export var offset_rotacao_y_modelo_graus: float = 180.0
+@export var velocidade_giro_patrulha: float = 4.2
+@export var velocidade_giro_cacada: float = 6.5
 @export var cadencia_passos_patrulha: float = 0.72
 @export var cadencia_passos_cacada: float = 0.40
 
@@ -129,9 +132,10 @@ func _garantir_estrutura_nos() -> void:
 	if modelo_pivot == null and usar_modelo_3d_real:
 		modelo_pivot = Node3D.new()
 		modelo_pivot.name = "ModeloPivot"
-		modelo_pivot.scale = Vector3.ONE * escala_modelo_3d
-		modelo_pivot.rotation = Vector3(0.0, PI * 0.5, 0.0)
 		add_child(modelo_pivot)
+	if modelo_pivot != null:
+		modelo_pivot.scale = Vector3.ONE * escala_modelo_3d
+		modelo_pivot.rotation = Vector3(0.0, deg_to_rad(offset_rotacao_y_modelo_graus), 0.0)
 
 	if modelo_pivot != null and usar_modelo_3d_real:
 		anim_player = RondanteAnimador.montar_no_pivo(modelo_pivot)
@@ -509,6 +513,8 @@ func pode_ver_jogador_sem_esconderijo(player: Player) -> bool:
 		return false
 	var cfg := _obter_config_efetiva()
 	var alcance := cfg.raio_visao * (1.25 if player.esta_com_lanterna_acesa() else 1.0)
+	if _jogador_em_zona_breu(player):
+		alcance *= _obter_mult_visao_zona_breu()
 	var diff := player.global_position - global_position
 	var dist_xz := Vector2(diff.x, diff.z).length()
 	if dist_xz > alcance or absf(diff.y) > 8.0:
@@ -588,10 +594,8 @@ func processar_ia(delta: float) -> void:
 			if pode_ver_jogador(player):
 				_entrar_em_cacada(player, cfg)
 				return
-			if is_inside_tree() and _direcao_espreita_atual.length_squared() > 0.001:
-				var alvo_olhar := global_position + Vector3(_direcao_espreita_atual.x, 0.0, _direcao_espreita_atual.z)
-				if global_position.distance_squared_to(alvo_olhar) > 0.001:
-					look_at(alvo_olhar, Vector3.UP)
+			if _direcao_espreita_atual.length_squared() > 0.001:
+				_rotacionar_para_direcao(_direcao_espreita_atual, delta, 5.0)
 			tempo_espreita_quina_restante -= delta
 			if tempo_espreita_quina_restante <= 0.0:
 				mudar_estado(Estado.PATRULHA)
@@ -690,10 +694,8 @@ func _entrar_em_cacada(player: Player, cfg: CriaturaConfig) -> void:
 
 func _iniciar_ataque_garras(player: Player) -> void:
 	tempo_ataque_restante = duracao_ataque_garras
-	if is_inside_tree() and player != null:
-		var alvo_olhar := Vector3(player.global_position.x, global_position.y, player.global_position.z)
-		if global_position.distance_squared_to(alvo_olhar) > 0.001:
-			look_at(alvo_olhar, Vector3.UP)
+	if player != null:
+		_rotacionar_para_direcao(player.global_position - global_position, 0.0, velocidade_giro_cacada)
 	mudar_estado(Estado.ATAQUE_GARRAS)
 	ataque_garras_iniciado.emit(player)
 
@@ -845,10 +847,40 @@ func _mover_para(destino: Vector3, velocidade: float, delta: float) -> void:
 
 	_ajustar_altura_chao()
 
-	if is_inside_tree() and dist_xz > 0.05:
-		var alvo_olhar := Vector3(global_position.x + dir.x, global_position.y, global_position.z + dir.z)
-		if global_position.distance_squared_to(alvo_olhar) > 0.001:
-			look_at(alvo_olhar, Vector3.UP)
+	if dist_xz > 0.05:
+		var vel_giro := velocidade_giro_cacada if estado_atual == Estado.CACADA else velocidade_giro_patrulha
+		_rotacionar_para_direcao(dir, delta, vel_giro)
+
+
+func _rotacionar_para_direcao(dir_xz: Vector3, delta: float, vel_giro: float) -> void:
+	var d := Vector3(dir_xz.x, 0.0, dir_xz.z)
+	if d.length_squared() < 0.0001:
+		return
+	d = d.normalized()
+	var yaw_alvo := atan2(-d.x, -d.z)
+	if delta <= 0.0:
+		rotation.y = yaw_alvo
+	else:
+		rotation.y = lerp_angle(rotation.y, yaw_alvo, clampf(vel_giro * delta, 0.0, 1.0))
+
+
+func _jogador_em_zona_breu(player: Player) -> bool:
+	if player == null or get_tree() == null:
+		return false
+	for z in get_tree().get_nodes_in_group("zona_breu_noturno"):
+		if z != null and is_instance_valid(z) and z.has_method("esta_jogador_dentro"):
+			if z.esta_jogador_dentro(player):
+				return true
+	return false
+
+
+func _obter_mult_visao_zona_breu() -> float:
+	if get_tree() == null:
+		return 1.25
+	for z in get_tree().get_nodes_in_group("zona_breu_noturno"):
+		if z != null and is_instance_valid(z) and ("multiplicador_visao_rondante" in z):
+			return maxf(1.0, float(z.multiplicador_visao_rondante))
+	return 1.25
 
 
 func _gerar_waypoints_procedurais() -> Array[Vector3]:

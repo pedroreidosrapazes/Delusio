@@ -12,6 +12,8 @@ signal sequencia_interacao_erro(motivo: String, nova_sequencia: Array[int], temp
 signal sequencia_interacao_tempo(restante: float, limite: float)
 signal sequencia_interacao_finalizada(sucesso: bool)
 signal som_emitido(posicao: Vector3, raio: float, tipo: String)
+signal lanterna_estado_alterado(acesa: bool)
+signal vigilia_janela_alterada(ativa: bool)
 
 const HOTBAR_SLOTS: int = 6
 const MAX_POR_ITEM: int = 50
@@ -60,11 +62,12 @@ var _rotacao_y_olhar_tras: float = 0.0
 @onready var luz_lanterna: SpotLight3D = get_node_or_null("Camera3D/Flashlight/SpotLight3D") as SpotLight3D
 
 const COR_LANTERNA_PADRAO := Color("#ffe3a8")
-const ALCANCE_LANTERNA_PADRAO: float = 32.0
-const ANGULO_LANTERNA_PADRAO: float = 52.0
-const ATENUACAO_DISTANCIA_LANTERNA: float = 0.85
-const ATENUACAO_ANGULO_LANTERNA: float = 0.75
+const ALCANCE_LANTERNA_PADRAO: float = 34.0
+const ANGULO_LANTERNA_PADRAO: float = 54.0
+const ATENUACAO_DISTANCIA_LANTERNA: float = 0.72
+const ATENUACAO_ANGULO_LANTERNA: float = 0.70
 var _energia_base_lanterna: float = 4.8
+var luz_preenchimento_lanterna: OmniLight3D = null
 
 var tempo_balanco: float = 0.0
 var posicao_original_camera: Vector3
@@ -73,6 +76,12 @@ var _desafio_sequencia: SequenciaDirecionalDesafio = SequenciaDirecionalDesafio.
 var _interacao_ativa_alvo: Interactable = null
 var _interagivel_focado: Interactable = null
 var esconderijo_atual: Node = null
+var janela_vigilia_atual: Node = null
+var _camera_transform_antes_janela: Transform3D = Transform3D.IDENTITY
+var _base_janela_global: Transform3D = Transform3D.IDENTITY
+var _rot_janela_yaw: float = 0.0
+var _rot_janela_pitch: float = 0.0
+var _cooldown_dica_lanterna: float = 0.0
 var _timer_som_movimento: float = 0.0
 
 
@@ -81,9 +90,11 @@ func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	if camera:
 		posicao_original_camera = camera.transform.origin
+	_garantir_luz_preenchimento_lanterna()
 	if luz_lanterna:
 		_aplicar_configuracao_lanterna()
 	_atualizar_aparencia_lanterna()
+	call_deferred("_conectar_sinais_monstros_lanterna")
 
 	_desafio_sequencia.sequencia_iniciada.connect(
 		func(seq: Array[int], limite: float, tit: String):
@@ -137,7 +148,8 @@ func submeter_direcao_sequencia(dir: int) -> String:
 	var gerente := GameManager.instance
 	if gerente != null and gerente.horario_atual == 2:
 		if _interacao_ativa_alvo != null and ("exigir_lanterna_a_noite" in _interacao_ativa_alvo) and _interacao_ativa_alvo.exigir_lanterna_a_noite:
-			if not esta_com_lanterna_acesa():
+			var em_ambiente_iluminado := _interacao_ativa_alvo.has_method("esta_em_ambiente_iluminado") and _interacao_ativa_alvo.esta_em_ambiente_iluminado()
+			if not em_ambiente_iluminado and not esta_com_lanterna_acesa():
 				return "escuro"
 	return _desafio_sequencia.submeter_direcao(dir)
 
@@ -176,8 +188,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _deve_manter_cursor_livre():
 		return
 
-	# Olhar para trás instantaneamente enquanto segura o botão.
-	if InputMap.has_action(ACAO_OLHAR_TRAS):
+	# Olhar para trás instantaneamente enquanto segura o botão (bloqueado durante vigília na janela).
+	if not esta_olhando_janela() and InputMap.has_action(ACAO_OLHAR_TRAS):
 		if event.is_action_pressed(ACAO_OLHAR_TRAS):
 			_definir_olhar_para_tras(true)
 		elif event.is_action_released(ACAO_OLHAR_TRAS):
@@ -185,14 +197,23 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# Controle de rotação da câmera pelo mouse
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		if olhando_para_tras:
+		if esta_olhando_janela():
+			var lim_y := deg_to_rad(45.0)
+			var lim_p := deg_to_rad(25.0)
+			_rot_janela_yaw = clampf(_rot_janela_yaw - event.relative.x * sensibilidade_mouse, -lim_y, lim_y)
+			_rot_janela_pitch = clampf(_rot_janela_pitch - event.relative.y * sensibilidade_mouse, -lim_p, lim_p)
+			_atualizar_camera_janela()
+		elif olhando_para_tras:
 			var limite_pan := deg_to_rad(LIMITE_PAN_OLHAR_TRAS_GRAUS)
 			_rotacao_y_olhar_tras = clamp(_rotacao_y_olhar_tras - event.relative.x * sensibilidade_mouse, -limite_pan, limite_pan)
+			rotacao_x_camera -= event.relative.y * sensibilidade_mouse
+			rotacao_x_camera = clamp(rotacao_x_camera, deg_to_rad(-85.0), deg_to_rad(85.0))
+			_atualizar_rotacao_camera()
 		else:
 			rotate_y(-event.relative.x * sensibilidade_mouse)
-		rotacao_x_camera -= event.relative.y * sensibilidade_mouse
-		rotacao_x_camera = clamp(rotacao_x_camera, deg_to_rad(-85.0), deg_to_rad(85.0))
-		_atualizar_rotacao_camera()
+			rotacao_x_camera -= event.relative.y * sensibilidade_mouse
+			rotacao_x_camera = clamp(rotacao_x_camera, deg_to_rad(-85.0), deg_to_rad(85.0))
+			_atualizar_rotacao_camera()
 
 	# Alternar captura do cursor do mouse
 	if event.is_action_pressed("ui_cancel"):
@@ -200,6 +221,17 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+	# Se estiver espiando pela janela, sair com [E], [Esc] ou Botão Direito
+	if esta_olhando_janela():
+		var quer_sair_janela: bool = event.is_action_pressed("interact") or event.is_action_pressed("ui_cancel") or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT)
+		if quer_sair_janela:
+			sair_vigilia_janela()
+			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_pressed("flashlight"):
+			alternar_lanterna()
+		return
 
 	# Se estiver escondido, sair com tecla de interação ou pulo/cancelar
 	if esta_escondido():
@@ -210,6 +242,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				sair_esconderijo()
 			get_viewport().set_input_as_handled()
 			return
+		if event.is_action_pressed("flashlight"):
+			alternar_lanterna()
+		return
 
 	# Se estiver no desafio de sequência direcional
 	if esta_em_interacao_sequencia():
@@ -267,12 +302,87 @@ func _unhandled_input(event: InputEvent) -> void:
 func alternar_lanterna() -> void:
 	if not _lanterna_equipada:
 		return
+	if _luz_lanterna_acesa and _deve_bloquear_desligar_lanterna_zona():
+		if GameManager.instance != null:
+			GameManager.instance.status_temporario.emit("Escuro demais para apagar a lanterna aqui!")
+		return
 	_luz_lanterna_acesa = not _luz_lanterna_acesa
 	_atualizar_aparencia_lanterna()
+	lanterna_estado_alterado.emit(esta_com_lanterna_acesa())
 
 
 func esta_com_lanterna_acesa() -> bool:
 	return _lanterna_equipada and _luz_lanterna_acesa
+
+
+func esta_na_zona_breu() -> bool:
+	if get_tree() == null:
+		return false
+	for z in get_tree().get_nodes_in_group("zona_breu_noturno"):
+		if z != null and is_instance_valid(z) and z.has_method("esta_jogador_dentro"):
+			if z.esta_jogador_dentro(self):
+				return true
+	return false
+
+
+func _deve_bloquear_desligar_lanterna_zona() -> bool:
+	if get_tree() == null:
+		return false
+	for z in get_tree().get_nodes_in_group("zona_breu_noturno"):
+		if z != null and is_instance_valid(z) and z.has_method("deve_bloquear_desligar_lanterna"):
+			if z.deve_bloquear_desligar_lanterna(self):
+				return true
+	return false
+
+
+func esta_olhando_janela() -> bool:
+	return janela_vigilia_atual != null and is_instance_valid(janela_vigilia_atual)
+
+
+func entrar_vigilia_janela(janela: Node) -> void:
+	if janela == null or esta_escondido():
+		return
+	if esta_olhando_janela():
+		sair_vigilia_janela()
+	janela_vigilia_atual = janela
+	velocity = Vector3.ZERO
+	_definir_olhar_para_tras(false)
+	_rot_janela_yaw = 0.0
+	_rot_janela_pitch = 0.0
+	if camera != null:
+		_camera_transform_antes_janela = camera.transform
+		if janela.has_method("obter_transform_camera"):
+			_base_janela_global = janela.obter_transform_camera()
+		elif janela is Node3D:
+			_base_janela_global = (janela as Node3D).global_transform
+		_atualizar_camera_janela()
+	vigilia_janela_alterada.emit(true)
+
+
+func sair_vigilia_janela() -> void:
+	if not esta_olhando_janela():
+		return
+	var janela := janela_vigilia_atual
+	janela_vigilia_atual = null
+	_rot_janela_yaw = 0.0
+	_rot_janela_pitch = 0.0
+	if camera != null:
+		camera.transform = _camera_transform_antes_janela
+		_atualizar_rotacao_camera()
+	if janela != null and is_instance_valid(janela) and janela.has_method("notificar_saida_janela"):
+		janela.notificar_saida_janela(self)
+	vigilia_janela_alterada.emit(false)
+
+
+func _atualizar_camera_janela() -> void:
+	if camera == null or not esta_olhando_janela():
+		return
+	var rot_extra := Basis(Vector3.UP, _rot_janela_yaw) * Basis(Vector3.RIGHT, _rot_janela_pitch)
+	var alvo_global := Transform3D(_base_janela_global.basis * rot_extra, _base_janela_global.origin)
+	if camera.is_inside_tree():
+		camera.global_transform = alvo_global
+	else:
+		camera.transform = alvo_global
 
 
 func entrar_esconderijo(esconderijo: Node) -> void:
@@ -318,6 +428,7 @@ func selecionar_slot(indice: int) -> void:
 	_indice_slot_selecionado = indice
 	_lanterna_equipada = _slots_hotbar[indice]["id"] == &"lanterna"
 	_atualizar_aparencia_lanterna()
+	lanterna_estado_alterado.emit(esta_com_lanterna_acesa())
 	hotbar_selecionada.emit(indice)
 
 
@@ -383,6 +494,38 @@ func consumir_item(id: StringName, quantidade: int = 1) -> bool:
 	return true
 
 
+func _garantir_luz_preenchimento_lanterna() -> void:
+	if luz_preenchimento_lanterna != null and is_instance_valid(luz_preenchimento_lanterna):
+		return
+	var pai_luz: Node = lanterna if lanterna != null else camera
+	if pai_luz == null:
+		return
+	luz_preenchimento_lanterna = pai_luz.get_node_or_null("LuzPreenchimentoLanterna") as OmniLight3D
+	if luz_preenchimento_lanterna == null:
+		luz_preenchimento_lanterna = OmniLight3D.new()
+		luz_preenchimento_lanterna.name = "LuzPreenchimentoLanterna"
+		pai_luz.add_child(luz_preenchimento_lanterna)
+	luz_preenchimento_lanterna.light_color = COR_LANTERNA_PADRAO
+	luz_preenchimento_lanterna.light_energy = 0.45
+	luz_preenchimento_lanterna.omni_range = 3.2
+	luz_preenchimento_lanterna.omni_attenuation = 1.4
+	luz_preenchimento_lanterna.shadow_enabled = false
+
+
+func _conectar_sinais_monstros_lanterna() -> void:
+	if get_tree() == null:
+		return
+	for m in get_tree().get_nodes_in_group("monstros_noturnos"):
+		if m != null and is_instance_valid(m) and m.has_signal("atordoado_por_luz"):
+			if not m.atordoado_por_luz.is_connected(_ao_rondante_atordoado):
+				m.atordoado_por_luz.connect(_ao_rondante_atordoado)
+
+
+func _ao_rondante_atordoado(_duracao: float) -> void:
+	if GameManager.instance != null:
+		GameManager.instance.status_temporario.emit("Criatura desnorteada pela luz! Recue!")
+
+
 func _aplicar_configuracao_lanterna() -> void:
 	if luz_lanterna == null:
 		return
@@ -397,10 +540,13 @@ func _aplicar_configuracao_lanterna() -> void:
 func _atualizar_aparencia_lanterna() -> void:
 	if lanterna:
 		lanterna.visible = _lanterna_equipada
+	var acesa := _lanterna_equipada and _luz_lanterna_acesa
 	if luz_lanterna:
-		luz_lanterna.visible = _lanterna_equipada and _luz_lanterna_acesa
+		luz_lanterna.visible = acesa
 		if luz_lanterna.visible:
 			_aplicar_configuracao_lanterna()
+	if luz_preenchimento_lanterna != null and is_instance_valid(luz_preenchimento_lanterna):
+		luz_preenchimento_lanterna.visible = acesa
 
 
 func calcular_fator_instabilidade_lanterna(distancia: float) -> float:
@@ -409,7 +555,8 @@ func calcular_fator_instabilidade_lanterna(distancia: float) -> float:
 	return clampf(lerpf(0.35, 1.0, clampf(distancia / 26.0, 0.0, 1.0)), 0.35, 1.0)
 
 
-func _processar_instabilidade_lanterna(_delta: float) -> void:
+func _processar_instabilidade_lanterna(delta: float) -> void:
+	_cooldown_dica_lanterna = maxf(0.0, _cooldown_dica_lanterna - delta)
 	if luz_lanterna == null or not is_instance_valid(luz_lanterna) or not _lanterna_equipada or not _luz_lanterna_acesa:
 		return
 
@@ -421,6 +568,9 @@ func _processar_instabilidade_lanterna(_delta: float) -> void:
 		if em_ameaca:
 			var flicker_ameaca := sin(Time.get_ticks_msec() * 0.09) * 0.45 + sin(Time.get_ticks_msec() * 0.028) * 0.25
 			luz_lanterna.light_energy = clampf(_energia_base_lanterna * (0.55 + flicker_ameaca), _energia_base_lanterna * 0.18, _energia_base_lanterna * 1.15)
+			if _cooldown_dica_lanterna <= 0.0:
+				_cooldown_dica_lanterna = 6.0
+				gerente.status_temporario.emit("A lanterna está enfurecendo a Silhueta! Apague [F]!")
 		elif fator < 1.0:
 			var flicker := sin(Time.get_ticks_msec() * 0.045) * 0.25 + sin(Time.get_ticks_msec() * 0.012) * 0.15
 			luz_lanterna.light_energy = clampf(_energia_base_lanterna * (fator + flicker), _energia_base_lanterna * 0.35, _energia_base_lanterna * 1.15)
@@ -486,7 +636,7 @@ func _process(delta: float) -> void:
 		else:
 			_desafio_sequencia.processar_delta(delta)
 
-	if InputMap.has_action(ACAO_OLHAR_TRAS):
+	if InputMap.has_action(ACAO_OLHAR_TRAS) and not esta_olhando_janela():
 		var pressionado := Input.is_action_pressed(ACAO_OLHAR_TRAS)
 		if olhando_para_tras != pressionado:
 			_definir_olhar_para_tras(pressionado)
@@ -543,7 +693,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	if esta_escondido():
+	if esta_escondido() or esta_olhando_janela():
 		velocity.x = move_toward(velocity.x, 0, velocidade_andar)
 		velocity.z = move_toward(velocity.z, 0, velocidade_andar)
 		move_and_slide()

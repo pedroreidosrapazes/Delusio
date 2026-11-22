@@ -100,6 +100,10 @@ var _cursor_clipe_longo: float = 0.0
 
 var ultima_zona_estatica: String = ""
 
+func _init() -> void:
+	exigir_lanterna_a_noite = false
+
+
 func _ready() -> void:
 	inicializar_radio()
 
@@ -109,6 +113,7 @@ func inicializar_radio() -> void:
 	if _inicializado:
 		return
 	_inicializado = true
+	exigir_lanterna_a_noite = false
 	add_to_group("radio")
 	set_process(true)
 	prompt_interacao = "Desligar Rádio"

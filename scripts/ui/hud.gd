@@ -30,6 +30,8 @@ var _legenda_radio: LegendaRadioUI
 var _label_dica_lista_tarefas: Label
 var _filtro_delusio: FiltroDelusioControlador
 var _label_prompt_interacao: Label
+var _label_timer_dia: Label
+var _label_estado_lanterna: Label
 var _alvo_focado_atual: Interactable = null
 var menu_medicamentos: MenuEscolhaMedicamentos = null
 var painel_leitura: PainelLeituraDocumento = null
@@ -46,6 +48,10 @@ func _ready() -> void:
 		GameManager.instance.status_temporario.connect(_on_status_temporario)
 		GameManager.instance.horario_alterado.connect(_on_horario_alterado)
 		GameManager.instance.dia_iniciado.connect(_on_dia_iniciado)
+		if GameManager.instance.has_signal("tempo_dia_atualizado"):
+			GameManager.instance.tempo_dia_atualizado.connect(_on_tempo_dia_atualizado)
+		if GameManager.instance.has_signal("vigilia_progresso_atualizado"):
+			GameManager.instance.vigilia_progresso_atualizado.connect(_on_vigilia_progresso_atualizado)
 		if _filtro_delusio:
 			_filtro_delusio.definir_estado_horario(GameManager.instance.horario_atual, true)
 		if DisplayServer.get_name() != "headless":
@@ -55,6 +61,7 @@ func _ready() -> void:
 	_criar_painel_lista_tarefas()
 	_criar_legenda_radio()
 	_criar_prompt_interacao()
+	_criar_indicadores_fase2()
 	_criar_hotbar()
 
 	if player:
@@ -66,7 +73,13 @@ func _ready() -> void:
 		player.sequencia_interacao_erro.connect(_ao_sequencia_erro)
 		player.sequencia_interacao_tempo.connect(_ao_sequencia_tempo)
 		player.sequencia_interacao_finalizada.connect(_ao_sequencia_finalizada)
+		if player.has_signal("lanterna_estado_alterado"):
+			player.lanterna_estado_alterado.connect(func(_acesa: bool): _atualizar_indicador_lanterna())
+		if player.has_signal("vigilia_janela_alterada"):
+			player.vigilia_janela_alterada.connect(func(_ativa: bool): _atualizar_indicador_lanterna(); _atualizar_prompt_interacao())
 		_sincronizar_hotbar()
+	_atualizar_label_timer_dia()
+	_atualizar_indicador_lanterna()
 
 
 func obter_painel_sequencia() -> PainelSequenciaInteracao:
@@ -175,6 +188,106 @@ func _on_horario_alterado(estado: int) -> void:
 		_filtro_delusio.definir_estado_horario(estado, false)
 	if _painel_lista_tarefas != null and _painel_lista_tarefas.esta_aberta():
 		_painel_lista_tarefas.atualizar_lista()
+	_atualizar_label_timer_dia()
+
+
+func _criar_indicadores_fase2() -> void:
+	if _label_timer_dia == null:
+		_label_timer_dia = Label.new()
+		_label_timer_dia.name = "LabelTimerDia"
+		_label_timer_dia.anchor_left = 1.0
+		_label_timer_dia.anchor_right = 1.0
+		_label_timer_dia.anchor_top = 0.0
+		_label_timer_dia.anchor_bottom = 0.0
+		_label_timer_dia.offset_left = -280.0
+		_label_timer_dia.offset_right = -36.0
+		_label_timer_dia.offset_top = 34.0
+		_label_timer_dia.offset_bottom = 68.0
+		_label_timer_dia.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		_label_timer_dia.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_label_timer_dia.add_theme_font_size_override("font_size", 18)
+		_label_timer_dia.add_theme_color_override("font_color", TemaSurvivalHorror.COR_TEXTO_ATIVO)
+		_label_timer_dia.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.85))
+		_label_timer_dia.add_theme_constant_override("shadow_offset_x", 1)
+		_label_timer_dia.add_theme_constant_override("shadow_offset_y", 1)
+		add_child(_label_timer_dia)
+
+	if _label_estado_lanterna == null:
+		_label_estado_lanterna = Label.new()
+		_label_estado_lanterna.name = "LabelEstadoLanterna"
+		_label_estado_lanterna.anchor_left = 0.0
+		_label_estado_lanterna.anchor_right = 0.0
+		_label_estado_lanterna.anchor_top = 1.0
+		_label_estado_lanterna.anchor_bottom = 1.0
+		_label_estado_lanterna.offset_left = 36.0
+		_label_estado_lanterna.offset_right = 380.0
+		_label_estado_lanterna.offset_top = -54.0
+		_label_estado_lanterna.offset_bottom = -24.0
+		_label_estado_lanterna.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_label_estado_lanterna.add_theme_font_size_override("font_size", 13)
+		_label_estado_lanterna.add_theme_color_override("font_color", TemaSurvivalHorror.COR_TEXTO_NORMAL)
+		_label_estado_lanterna.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.85))
+		_label_estado_lanterna.add_theme_constant_override("shadow_offset_x", 1)
+		_label_estado_lanterna.add_theme_constant_override("shadow_offset_y", 1)
+		add_child(_label_estado_lanterna)
+
+
+func _on_tempo_dia_atualizado(_restante: float, _total: float, _horario: int) -> void:
+	_atualizar_label_timer_dia()
+	if _painel_lista_tarefas != null and _painel_lista_tarefas.esta_aberta():
+		_painel_lista_tarefas.atualizar_lista()
+
+
+func _on_vigilia_progresso_atualizado(_progresso: float, _concluida: bool, _resumo: String) -> void:
+	_atualizar_label_timer_dia()
+	if _painel_lista_tarefas != null and _painel_lista_tarefas.esta_aberta():
+		_painel_lista_tarefas.atualizar_lista()
+
+
+func _atualizar_label_timer_dia() -> void:
+	if _label_timer_dia == null:
+		return
+	var gerente := GameManager.instance
+	if gerente == null:
+		_label_timer_dia.text = "DIA 1 • 06:00"
+		return
+	var hora_txt: String = gerente.obter_hora_formatada() if gerente.has_method("obter_hora_formatada") else "06:00"
+	match gerente.horario_atual:
+		0:
+			_label_timer_dia.text = "DIA %d  •  %s" % [gerente.dia_atual, hora_txt]
+			_label_timer_dia.add_theme_color_override("font_color", TemaSurvivalHorror.COR_TEXTO_ATIVO)
+		1:
+			_label_timer_dia.text = "TARDE  •  %s" % hora_txt
+			_label_timer_dia.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_AMBAR)
+		_:
+			if gerente.modo_noturno == GameManager.ModoNoturno.VIGILIA_DOMESTICA and gerente.exigir_conclusao_vigilia_para_dormir and not gerente.vigilia_concluida:
+				_label_timer_dia.text = "VIGÍLIA  •  %ds" % int(ceilf(gerente.tempo_vigilia_restante))
+			else:
+				_label_timer_dia.text = "DIA %d  •  %s" % [gerente.dia_atual, hora_txt]
+			_label_timer_dia.add_theme_color_override("font_color", TemaSurvivalHorror.COR_DESTAQUE_VERMELHO)
+
+
+func _atualizar_indicador_lanterna() -> void:
+	if _label_estado_lanterna == null or player == null:
+		return
+	var texto := "[F] Lanterna: Acesa" if player.esta_com_lanterna_acesa() else "[F] Lanterna: Apagada"
+	if player.has_method("esta_olhando_janela") and player.esta_olhando_janela():
+		texto += "   |   [E] Sair da Janela"
+	elif player.esta_escondido():
+		texto += "   |   [E] Sair do Esconderijo"
+	_label_estado_lanterna.text = texto
+	_label_estado_lanterna.add_theme_color_override(
+		"font_color",
+		TemaSurvivalHorror.COR_STATUS_AMBAR if player.esta_com_lanterna_acesa() else TemaSurvivalHorror.COR_TEXTO_APAGADO
+	)
+
+
+func obter_label_timer_dia() -> Label:
+	return _label_timer_dia
+
+
+func obter_label_estado_lanterna() -> Label:
+	return _label_estado_lanterna
 
 
 func _criar_painel_sequencia() -> void:
@@ -217,7 +330,7 @@ func _atualizar_prompt_interacao() -> void:
 		_label_prompt_interacao.visible = false
 		return
 
-	if (painel_leitura != null and painel_leitura.visible) or (player != null and player.esta_em_interacao_sequencia()):
+	if (painel_leitura != null and painel_leitura.visible) or (player != null and (player.esta_em_interacao_sequencia() or (player.has_method("esta_olhando_janela") and player.esta_olhando_janela()))):
 		_label_prompt_interacao.visible = false
 		return
 
@@ -481,6 +594,8 @@ func _on_status_temporario(mensagem: String) -> void:
 func _on_dia_iniciado(_dia: int) -> void:
 	if _painel_lista_tarefas != null and _painel_lista_tarefas.esta_aberta():
 		_painel_lista_tarefas.atualizar_lista()
+	_atualizar_label_timer_dia()
+	_atualizar_indicador_lanterna()
 	if DisplayServer.get_name() != "headless":
 		abrir_menu_medicamentos()
 

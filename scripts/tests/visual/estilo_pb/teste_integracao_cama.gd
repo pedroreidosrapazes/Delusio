@@ -41,6 +41,13 @@ func _executar() -> void:
 		quit(1)
 		return
 
+	# Isola o contrato de 3 tarefas e sono imediato desta suíte de estilo PB da cama,
+	# independente da configuração de produção (4 tarefas + vigília noturna) em world.tscn.
+	gerente.tarefas_totais = 3
+	gerente.exigir_conclusao_vigilia_para_dormir = false
+	gerente.iniciar_novo_dia()
+	await process_frame
+
 	var material_original := cama.mesh.surface_get_material(0)
 	_verificar(cama.get_surface_override_material(0) == null, "A cama já iniciou com override de superfície.")
 	_verificar(not ambiente.environment.glow_enabled, "O teste espera Glow desligado inicialmente no mundo.")

@@ -5,6 +5,8 @@ extends Node3D
 ## Sincroniza automaticamente as portas com suas respectivas animações no AnimationPlayer,
 ## tornando-as interativas com o RayCast3D do Player, inicializa o rádio 3D e gerencia a iluminação interna.
 
+signal jogador_zona_casa_alterada(dentro: bool)
+
 @export var animation_player: AnimationPlayer
 
 const APLICADOR_ESTILO_PB := preload("res://scripts/visual/estilo_pb/aplicador_estilo_pb.gd")
@@ -28,9 +30,12 @@ var _energia_base_luzes: float = 0.25
 var _horario_atual: int = 0
 var _tempo_flicker: float = 0.0
 var queda_energia_ativa: bool = false
+var jogador_dentro_casa: bool = false
+var _zona_interna: Area3D = null
 
 
 func _ready() -> void:
+	add_to_group("casa_controlador")
 	if animation_player == null:
 		animation_player = get_node_or_null("AnimationPlayer") as AnimationPlayer
 		if animation_player == null:
@@ -39,9 +44,12 @@ func _ready() -> void:
 					animation_player = filho
 					break
 
+	_criar_zona_interna_casa()
 	_sincronizar_portas()
 	_sincronizar_radio()
 	_sincronizar_cama()
+	_sincronizar_esconderijo_armario()
+	_sincronizar_caixa_fusiveis()
 	_criar_luzes_internas()
 	_conectar_progresso_tarefas()
 
@@ -110,50 +118,109 @@ func _criar_luzes_internas() -> void:
 	if not _luzes_internas.is_empty():
 		return
 
-	var cor_quente := Color("#ffb347")
+	var specs: Array[Dictionary] = [
+		{
+			"name": "LuzInterna_Quarto",
+			"pos": Vector3(2.1, 1.15, 1.5),
+			"range": 4.6,
+			"cor": Color("#ffbe6b")
+		},
+		{
+			"name": "LuzInterna_Sala",
+			"pos": Vector3(-1.6, 1.15, -0.9),
+			"range": 5.0,
+			"cor": Color("#ffbe6b")
+		},
+		{
+			"name": "LuzInterna_Cozinha",
+			"pos": Vector3(2.1, 1.15, -1.0),
+			"range": 4.8,
+			"cor": Color("#ffbe6b")
+		},
+		{
+			"name": "LuzInterna_Banheiro",
+			"pos": Vector3(-2.1, 1.15, 1.3),
+			"range": 3.8,
+			"cor": Color("#ffd9a8")
+		},
+		{
+			"name": "LuzInterna_Entrada",
+			"pos": Vector3(0.0, 1.15, -1.2),
+			"range": 4.2,
+			"cor": Color("#ffb347")
+		}
+	]
 
-	# Luz 1: Quarto (perto da cama)
-	var luz_quarto := OmniLight3D.new()
-	luz_quarto.name = "LuzInterna_Quarto"
-	luz_quarto.light_color = cor_quente
-	luz_quarto.omni_range = 6.0
-	luz_quarto.omni_attenuation = 1.35
-	luz_quarto.light_energy = _energia_base_luzes
-	var no_cama := find_child("cama", true, false) as Node3D
-	if no_cama:
-		no_cama.add_child(luz_quarto)
-		luz_quarto.position = Vector3(0.0, 1.2, 0.0)
-	else:
-		add_child(luz_quarto)
-		luz_quarto.position = Vector3(2.5, 1.8, 2.0)
-	_luzes_internas.append(luz_quarto)
+	for spec in specs:
+		var nome_luz: String = str(spec["name"])
+		var luz := get_node_or_null(nome_luz) as OmniLight3D
+		if luz == null:
+			luz = OmniLight3D.new()
+			luz.name = nome_luz
+			add_child(luz)
+		luz.position = spec["pos"]
+		luz.light_color = spec["cor"]
+		luz.omni_range = float(spec["range"])
+		luz.omni_attenuation = 1.2
+		luz.light_energy = _energia_base_luzes
+		luz.shadow_enabled = false
+		_luzes_internas.append(luz)
 
-	# Luz 2: Sala (perto do rádio)
-	var luz_sala := OmniLight3D.new()
-	luz_sala.name = "LuzInterna_Sala"
-	luz_sala.light_color = cor_quente
-	luz_sala.omni_range = 6.0
-	luz_sala.omni_attenuation = 1.35
-	luz_sala.light_energy = _energia_base_luzes
-	var no_radio := find_child("radio", true, false) as Node3D
-	if no_radio:
-		no_radio.add_child(luz_sala)
-		luz_sala.position = Vector3(0.0, 1.0, 0.0)
-	else:
-		add_child(luz_sala)
-		luz_sala.position = Vector3(-1.5, 1.8, 1.0)
-	_luzes_internas.append(luz_sala)
 
-	# Luz 3: Cozinha / Área interna
-	var luz_cozinha := OmniLight3D.new()
-	luz_cozinha.name = "LuzInterna_Cozinha"
-	luz_cozinha.light_color = cor_quente
-	luz_cozinha.omni_range = 6.0
-	luz_cozinha.omni_attenuation = 1.35
-	luz_cozinha.light_energy = _energia_base_luzes
-	add_child(luz_cozinha)
-	luz_cozinha.position = Vector3(-0.5, 1.8, -2.5)
-	_luzes_internas.append(luz_cozinha)
+func _criar_zona_interna_casa() -> void:
+	_zona_interna = get_node_or_null("ZonaInternaCasa") as Area3D
+	if _zona_interna == null:
+		_zona_interna = Area3D.new()
+		_zona_interna.name = "ZonaInternaCasa"
+		_zona_interna.position = Vector3(0.0, 1.1, 0.1)
+		_zona_interna.monitoring = true
+		_zona_interna.monitorable = false
+
+		var col := CollisionShape3D.new()
+		col.name = "CollisionShape3D"
+		var box := BoxShape3D.new()
+		box.size = Vector3(6.8, 2.2, 4.4)
+		col.shape = box
+		_zona_interna.add_child(col)
+		add_child(_zona_interna)
+
+	if not _zona_interna.body_entered.is_connected(_ao_entrar_zona_interna):
+		_zona_interna.body_entered.connect(_ao_entrar_zona_interna)
+	if not _zona_interna.body_exited.is_connected(_ao_sair_zona_interna):
+		_zona_interna.body_exited.connect(_ao_sair_zona_interna)
+
+
+func _ao_entrar_zona_interna(body: Node3D) -> void:
+	if body is Player or body.is_in_group("player"):
+		if not jogador_dentro_casa:
+			jogador_dentro_casa = true
+			jogador_zona_casa_alterada.emit(true)
+
+
+func _ao_sair_zona_interna(body: Node3D) -> void:
+	if body is Player or body.is_in_group("player"):
+		if jogador_dentro_casa:
+			jogador_dentro_casa = false
+			jogador_zona_casa_alterada.emit(false)
+
+
+func contem_ponto_interno(pos_global: Vector3) -> bool:
+	var p: Vector3 = to_local(pos_global)
+	return p.x >= -3.5 and p.x <= 3.6 and p.y >= -0.2 and p.y <= 2.2 and p.z >= -2.25 and p.z <= 2.45
+
+
+func esta_area_iluminada_interna(alvo: Node3D = null) -> bool:
+	if queda_energia_ativa:
+		return false
+	if alvo != null:
+		if is_ancestor_of(alvo):
+			return true
+		if alvo.is_inside_tree() and contem_ponto_interno(alvo.global_position):
+			return true
+		if _zona_interna != null and alvo is PhysicsBody3D and _zona_interna.overlaps_body(alvo):
+			return true
+		return false
+	return jogador_dentro_casa
 
 
 func _sincronizar_portas() -> void:
@@ -204,6 +271,7 @@ func _sincronizar_portas() -> void:
 		corpo_colisao.set("animacao_abrir", config["abrir"])
 		corpo_colisao.set("animacao_fechar", config["fechar"])
 		corpo_colisao.set("prompt_interacao", "Abrir Porta")
+		corpo_colisao.set("exigir_lanterna_a_noite", false)
 
 
 func _sincronizar_radio() -> void:
@@ -224,6 +292,7 @@ func _sincronizar_radio() -> void:
 	if corpo_radio.get_script() != script_radio:
 		corpo_radio.set_script(script_radio)
 
+	corpo_radio.set("exigir_lanterna_a_noite", false)
 	# Inicializa explicitamente pois set_script em nó já na árvore não dispara _ready()
 	if corpo_radio.has_method("inicializar_radio"):
 		corpo_radio.inicializar_radio()
@@ -281,6 +350,70 @@ func _sincronizar_cama() -> void:
 
 	corpo_cama.set("prompt_interacao", "Dormir")
 	corpo_cama.set("interacao_ativa", true)
+	corpo_cama.set("exigir_lanterna_a_noite", false)
+
+
+func _sincronizar_esconderijo_armario() -> void:
+	var no_armario: Node3D = find_child("armario", true, false) as Node3D
+	if no_armario == null:
+		return
+
+	var corpo_armario: StaticBody3D = null
+	for filho in no_armario.get_children():
+		if filho is StaticBody3D:
+			corpo_armario = filho
+			break
+
+	if corpo_armario == null:
+		corpo_armario = StaticBody3D.new()
+		corpo_armario.name = "StaticBody3D"
+		var col := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(8.0, 12.0, 6.5)
+		col.shape = box
+		corpo_armario.add_child(col)
+		no_armario.add_child(corpo_armario)
+
+	var script_esconderijo: Script = load("res://scripts/interactables/esconderijo.gd")
+	if corpo_armario.get_script() != script_esconderijo:
+		corpo_armario.set_script(script_esconderijo)
+
+	corpo_armario.set("nome_esconderijo", "Armário do Quarto")
+	corpo_armario.set("prompt_interacao", "Esconder-se em Armário do Quarto")
+	corpo_armario.set("exigir_lanterna_a_noite", false)
+	corpo_armario.set("exigir_sequencia_direcional", false)
+	if not corpo_armario.is_in_group("esconderijos"):
+		corpo_armario.add_to_group("esconderijos")
+	corpo_armario.set_process(true)
+
+
+func _sincronizar_caixa_fusiveis() -> void:
+	var no_caixa: Node3D = find_child("caixa_de_luz", true, false) as Node3D
+	if no_caixa == null:
+		return
+
+	var corpo_caixa: StaticBody3D = null
+	for filho in no_caixa.get_children():
+		if filho is StaticBody3D:
+			corpo_caixa = filho
+			break
+
+	if corpo_caixa == null:
+		corpo_caixa = StaticBody3D.new()
+		corpo_caixa.name = "StaticBody3D"
+		var col := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(0.8, 1.4, 1.4)
+		col.shape = box
+		corpo_caixa.add_child(col)
+		no_caixa.add_child(corpo_caixa)
+
+	var script_caixa: Script = load("res://scripts/interactables/caixa_fusiveis.gd")
+	if corpo_caixa.get_script() != script_caixa:
+		corpo_caixa.set_script(script_caixa)
+
+	if corpo_caixa.has_method("inicializar_caixa_fusiveis"):
+		corpo_caixa.inicializar_caixa_fusiveis()
 
 
 func _conectar_progresso_tarefas() -> void:

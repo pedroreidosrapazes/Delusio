@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/interactables/esconderijo.gd" id="1_escond"]
+[ext_resource type="PackedScene" path="res://assets/props/esconderijos/Armarioe_Fundo-col.blend" id="2_modelo"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_armpatio"]
+size = Vector3(3.6, 2.1, 1.2)
+
+[node name="EsconderijoPatio" type="StaticBody3D"]
+script = ExtResource("1_escond")
+nome_esconderijo = "Armário do Pátio"
+ponto_olhar = NodePath("PontoOlhar")
+ponto_saida = NodePath("PontoSaida")
+
+[node name="Modelo" parent="." instance=ExtResource("2_modelo")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 1.2, 0.6, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+shape = SubResource("BoxShape3D_armpatio")
+
+[node name="PontoOlhar" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0.3)
+
+[node name="PontoSaida" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 1.4)

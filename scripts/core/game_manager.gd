@@ -10,28 +10,44 @@ signal noite_iniciada()
 signal tarefas_atualizadas(concluidas: int, totais: int, mensagem: String)
 signal status_temporario(mensagem: String)
 signal horario_alterado(estado: int)
+signal tempo_dia_atualizado(restante: float, total: float, horario: int)
+signal vigilia_progresso_atualizado(progresso: float, concluida: bool, resumo: String)
 signal jogador_capturado_na_noite(monstro: Node3D)
 signal documento_lido_registrado(documento_id: StringName)
 
 enum ModoNoturno { NENHUM = 0, VIGILIA_DOMESTICA = 1, TAREFAS_PENDENTES = 2 }
+enum ModoJogo { ENDLESS = 0, HISTORIA = 1 }
+static var modo_jogo_selecionado: int = ModoJogo.ENDLESS
+
 var modo_noturno: int = ModoNoturno.NENHUM
 
 @export_category("Configurações do Dia")
+@export var modo_jogo: int = ModoJogo.ENDLESS
 @export var dia_atual: int = 1
 @export var tarefas_totais: int = 3
 @export var duracao_dia_segundos: float = 180.0
+@export var duracao_vigilia_segundos: float = 45.0
+@export var exigir_conclusao_vigilia_para_dormir: bool = false
 
 var tarefas_concluidas: int = 0
 var horario_atual: int = 0
 var tempo_dia_restante: float = 180.0
+var duracao_dia_efetiva: float = 180.0
 
 const GERENCIADOR_MEDICAMENTOS := preload("res://scripts/core/gerenciador_medicamentos.gd")
 const DIRETOR_EVENTOS_NOITE_SCRIPT := preload("res://scripts/core/diretor_eventos_noite.gd")
 const CENA_RONDANTE_FAZENDA := preload("res://scenes/monsters/rondante_fazenda.tscn")
+const RASTRO_INVESTIGATIVO_SCRIPT := preload("res://scripts/interactables/rastro_investigativo.gd")
 
 var pontos_vigilia_ativos: bool = false
 var recargas_luz_disponiveis: int = 2
 var rastros_investigativos: Array[Node3D] = []
+var tempo_vigilia_restante: float = 0.0
+var vigilia_concluida: bool = false
+var checagens_janela_vigilia: int = 0
+var rastros_inspecionados: int = 0
+var fusiveis_religados_noite: int = 0
+var _ultimo_segundo_emitido: int = -1
 
 var gerenciador_medicamentos: GerenciadorMedicamentos = null
 var documentos_lidos: Array[StringName] = []
@@ -58,7 +74,20 @@ func _exit_tree() -> void:
 		instance = null
 
 
+static func definir_modo_jogo(modo: int) -> void:
+	modo_jogo_selecionado = modo
+
+
+func esta_em_modo_endless() -> bool:
+	return modo_jogo == ModoJogo.ENDLESS
+
+
+func obter_nome_modo_jogo() -> String:
+	return "MODO HISTÓRIA" if modo_jogo == ModoJogo.HISTORIA else "MODO ENDLESS"
+
+
 func _ready() -> void:
+	modo_jogo = modo_jogo_selecionado
 	if gerenciador_medicamentos == null:
 		gerenciador_medicamentos = GerenciadorMedicamentos.new()
 		gerenciador_medicamentos.name = "GerenciadorMedicamentos"
@@ -141,39 +170,66 @@ func _garantir_rondante_cena() -> void:
 
 
 func _garantir_esconderijo_cena() -> void:
-	if get_tree() == null or not get_tree().get_nodes_in_group("esconderijos").is_empty():
+	if get_tree() == null:
 		return
-	var esc := Esconderijo.new()
-	esc.name = "Esconderijo Fazenda"
-	esc.nome_esconderijo = "Abrigo de Madeira"
-	esc.position = Vector3(2.5, 1.1, 26.5)
+	if not get_tree().get_nodes_in_group("esconderijos").is_empty():
+		return
+	for node in get_tree().current_scene.find_children("*", "Esconderijo", true, false) if get_tree().current_scene != null else []:
+		if node != null:
+			return
 
-	var mesh_inst := MeshInstance3D.new()
-	var box_mesh := BoxMesh.new()
-	box_mesh.size = Vector3(1.4, 2.2, 1.4)
-	mesh_inst.mesh = box_mesh
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.28, 0.20, 0.14)
-	mesh_inst.material_override = mat
-	esc.add_child(mesh_inst)
 
-	var col := CollisionShape3D.new()
-	var box_shape := BoxShape3D.new()
-	box_shape.size = Vector3(1.4, 2.2, 1.4)
-	col.shape = box_shape
-	esc.add_child(col)
+func _obter_duracao_transicao_clima() -> float:
+	if DisplayServer.get_name() == "headless":
+		return 0.0
+	return 3.5
 
-	get_parent().call_deferred("add_child", esc)
+
+func obter_hora_formatada() -> String:
+	if horario_atual == 2:
+		if modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and exigir_conclusao_vigilia_para_dormir and not vigilia_concluida:
+			return "NOITE • VIGÍLIA"
+		return "NOITE"
+	var frac: float = 1.0 - clampf(tempo_dia_restante / maxf(1.0, duracao_dia_efetiva), 0.0, 1.0)
+	var minutos_totais: int = int(roundf(lerpf(360.0, 1080.0, frac))) # Relógio rural: 06:00 -> 18:00
+	var h: int = clampi(minutos_totais / 60, 6, 18)
+	var m: int = minutos_totais % 60
+	return "%02d:%02d" % [h, m]
 
 
 func processar_tempo_dia(delta: float) -> void:
 	if horario_atual == 2:
+		if modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida and tempo_vigilia_restante > 0.0:
+			tempo_vigilia_restante = maxf(0.0, tempo_vigilia_restante - delta)
+			var seg_v: int = int(ceilf(tempo_vigilia_restante))
+			if seg_v != _ultimo_segundo_emitido:
+				_ultimo_segundo_emitido = seg_v
+				_emitir_progresso_vigilia()
+				tempo_dia_atualizado.emit(tempo_vigilia_restante, duracao_vigilia_segundos, horario_atual)
+			if tempo_vigilia_restante <= 0.0:
+				concluir_vigilia_domestica()
 		return
 
 	tempo_dia_restante = maxf(0.0, tempo_dia_restante - delta)
+	var seg_atual: int = int(ceilf(tempo_dia_restante))
+	if seg_atual != _ultimo_segundo_emitido:
+		_ultimo_segundo_emitido = seg_atual
+		tempo_dia_atualizado.emit(tempo_dia_restante, duracao_dia_efetiva, horario_atual)
+
+	if horario_atual == 0 and tempo_dia_restante > 0.0 and tempo_dia_restante <= duracao_dia_efetiva * 0.35:
+		horario_atual = 1
+		if environment_noite and environment_noite.has_method("mudar_horario"):
+			environment_noite.mudar_horario(1, _obter_duracao_transicao_clima())
+		horario_alterado.emit(1)
+		tempo_dia_atualizado.emit(tempo_dia_restante, duracao_dia_efetiva, horario_atual)
+
 	if tempo_dia_restante <= 0.0 and horario_atual != 2:
 		if tarefas_concluidas < tarefas_totais:
 			modo_noturno = ModoNoturno.TAREFAS_PENDENTES
+			iniciar_evento_terror()
+		else:
+			if modo_noturno == ModoNoturno.NENHUM:
+				modo_noturno = ModoNoturno.VIGILIA_DOMESTICA
 			iniciar_evento_terror()
 
 
@@ -186,12 +242,19 @@ func iniciar_novo_dia() -> void:
 	horario_atual = 0
 	modo_noturno = ModoNoturno.NENHUM
 	pontos_vigilia_ativos = false
+	tempo_vigilia_restante = 0.0
+	vigilia_concluida = false
+	checagens_janela_vigilia = 0
+	rastros_inspecionados = 0
+	fusiveis_religados_noite = 0
+	_ultimo_segundo_emitido = -1
 	_limpar_rastros()
 
 	var mult_t := 0.0
 	if gerenciador_medicamentos != null:
 		mult_t = gerenciador_medicamentos.obter_modificador("mult_tempo_dia", 0.0)
 	tempo_dia_restante = maxf(30.0, duracao_dia_segundos * (1.0 + mult_t))
+	duracao_dia_efetiva = tempo_dia_restante
 
 	if dia_atual > 1 and estagio_introducao_silhueta != Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL:
 		estagio_introducao_silhueta = Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL
@@ -240,6 +303,7 @@ func iniciar_novo_dia() -> void:
 		tarefas_concluidas = tarefas_totais
 
 	atualizar_hud()
+	tempo_dia_atualizado.emit(tempo_dia_restante, duracao_dia_efetiva, horario_atual)
 	print("--- DIA %d INICIADO ---" % dia_atual)
 	dia_iniciado.emit(dia_atual)
 
@@ -259,17 +323,20 @@ func concluir_tarefa(_id_tarefa: String = "") -> void:
 		if modo_noturno == ModoNoturno.NENHUM:
 			modo_noturno = ModoNoturno.VIGILIA_DOMESTICA
 		iniciar_evento_terror()
-	elif tarefas_totais >= 2 and tarefas_concluidas == tarefas_totais - 1:
+	elif tarefas_totais >= 2 and tarefas_concluidas == tarefas_totais - 1 and horario_atual == 0:
 		horario_atual = 1
 		if environment_noite and environment_noite.has_method("mudar_horario"):
 			environment_noite.mudar_horario(1) # 1 = TARDE
 		horario_alterado.emit(1)
+		tempo_dia_atualizado.emit(tempo_dia_restante, duracao_dia_efetiva, horario_atual)
 
 
 func atualizar_hud() -> void:
 	var msg: String
 	if tarefas_concluidas < tarefas_totais:
 		msg = "Dia %d | Tarefas: %d / %d" % [dia_atual, tarefas_concluidas, tarefas_totais]
+	elif exigir_conclusao_vigilia_para_dormir and modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida:
+		msg = "Dia %d | Vigília Noturna (%ds) — Espione a janela, fusível ou rastros!" % [dia_atual, int(ceilf(tempo_vigilia_restante))]
 	else:
 		msg = "Dia %d | Vá para a casa e durma na cama!" % dia_atual
 
@@ -279,12 +346,68 @@ func atualizar_hud() -> void:
 	tarefas_atualizadas.emit(tarefas_concluidas, tarefas_totais, msg)
 
 
+func _emitir_progresso_vigilia() -> void:
+	var total := maxf(1.0, duracao_vigilia_segundos)
+	var progresso := 1.0 if vigilia_concluida else clampf(1.0 - (tempo_vigilia_restante / total), 0.0, 1.0)
+	var resumo := "Vigília concluída!" if vigilia_concluida else "Vigília: %ds" % int(ceilf(tempo_vigilia_restante))
+	vigilia_progresso_atualizado.emit(progresso, vigilia_concluida, resumo)
+
+
 func ativar_vigilia_domestica() -> void:
 	pontos_vigilia_ativos = true
+	tempo_vigilia_restante = duracao_vigilia_segundos
+	vigilia_concluida = false
+	_ultimo_segundo_emitido = int(ceilf(tempo_vigilia_restante))
 	recargas_luz_disponiveis = 2
 	if gerenciador_medicamentos != null:
 		recargas_luz_disponiveis += int(gerenciador_medicamentos.obter_modificador("recargas_noturnas_extras", 0.0))
 	_gerar_rastros_investigativos()
+	_emitir_progresso_vigilia()
+	atualizar_hud()
+
+
+func registrar_vigilia_janela() -> void:
+	if horario_atual != 2 or modo_noturno != ModoNoturno.VIGILIA_DOMESTICA or vigilia_concluida:
+		return
+	checagens_janela_vigilia += 1
+	tempo_vigilia_restante = maxf(0.0, tempo_vigilia_restante - 12.0)
+	_emitir_progresso_vigilia()
+	if tempo_vigilia_restante <= 0.0:
+		concluir_vigilia_domestica()
+	else:
+		atualizar_hud()
+
+
+func registrar_fusivel_religado() -> void:
+	fusiveis_religados_noite += 1
+	if horario_atual == 2 and modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida:
+		tempo_vigilia_restante = maxf(0.0, tempo_vigilia_restante - 15.0)
+		_emitir_progresso_vigilia()
+		if tempo_vigilia_restante <= 0.0:
+			concluir_vigilia_domestica()
+		else:
+			atualizar_hud()
+
+
+func registrar_rastro_inspecionado(_rastro: Node3D = null) -> void:
+	rastros_inspecionados += 1
+	if horario_atual == 2 and modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida:
+		tempo_vigilia_restante = maxf(0.0, tempo_vigilia_restante - 15.0)
+		_emitir_progresso_vigilia()
+		if tempo_vigilia_restante <= 0.0:
+			concluir_vigilia_domestica()
+		else:
+			atualizar_hud()
+
+
+func concluir_vigilia_domestica() -> void:
+	if vigilia_concluida:
+		return
+	vigilia_concluida = true
+	tempo_vigilia_restante = 0.0
+	_emitir_progresso_vigilia()
+	atualizar_hud()
+	status_temporario.emit("A madrugada acalmou. Agora você pode dormir na cama.")
 
 
 func recarregar_luz_vigilia() -> bool:
@@ -297,11 +420,43 @@ func recarregar_luz_vigilia() -> bool:
 
 func _gerar_rastros_investigativos() -> void:
 	_limpar_rastros()
-	for i in range(3):
-		var rastro := Node3D.new()
+	var specs: Array[Dictionary] = [
+		{
+			"id": &"rastro_horta",
+			"desc": "Pegadas arrastadas perto da horta... alguém parou aqui olhando a janela.",
+			"hook": "LayoutMapaFase1/Setor2_PatioTarefas/HookHorta",
+			"fallback": Vector3(-2.0, 0.571, 26.0)
+		},
+		{
+			"id": &"rastro_cocho",
+			"desc": "Marcas fundas de garras e terra revirada junto ao cocho.",
+			"hook": "LayoutMapaFase1/Setor2_PatioTarefas/HookCocho",
+			"fallback": Vector3(6.0, 0.571, 22.0)
+		},
+		{
+			"id": &"rastro_sul",
+			"desc": "Rastro estranho seguindo na direção da mata fechada ao sul.",
+			"hook": "LayoutMapaFase1/Setor4_ZonaBreuNoturno/HookEntradaBreu",
+			"fallback": Vector3(-8.0, 0.571, 45.0)
+		}
+	]
+
+	var pai_mundo: Node = get_parent() if get_parent() != null else self
+	for i in range(specs.size()):
+		var spec := specs[i]
+		var rastro: RastroInvestigativo = RASTRO_INVESTIGATIVO_SCRIPT.new()
 		rastro.name = "RastroInvestigativo_%d" % i
-		rastro.add_to_group("rastros_vigilia")
-		add_child(rastro)
+		rastro.rastro_id = spec["id"]
+		rastro.descricao_pista = spec["desc"]
+
+		var pos_alvo: Vector3 = spec["fallback"]
+		if pai_mundo != null:
+			var marcador := pai_mundo.get_node_or_null(str(spec["hook"])) as Node3D
+			if marcador != null:
+				pos_alvo = marcador.position
+		pai_mundo.add_child(rastro)
+		if rastro is Node3D:
+			(rastro as Node3D).position = pos_alvo
 		rastros_investigativos.append(rastro)
 
 
@@ -329,6 +484,7 @@ func iniciar_evento_terror() -> void:
 	if environment_noite and environment_noite.has_method("mudar_horario"):
 		environment_noite.mudar_horario(2) # 2 = NOITE
 	horario_alterado.emit(2)
+	tempo_dia_atualizado.emit(tempo_vigilia_restante if modo_noturno == ModoNoturno.VIGILIA_DOMESTICA else 0.0, duracao_dia_efetiva, horario_atual)
 
 	if silhueta:
 		_conectar_silhueta_introducao()
@@ -365,8 +521,14 @@ func registrar_captura_monstro(monstro: Node3D, player: Player) -> void:
 	jogador_capturado_na_noite.emit(monstro)
 
 
-func tentar_dormir() -> void:
+func tentar_dormir(ignorar_vigilia: bool = false) -> void:
 	if tarefas_concluidas >= tarefas_totais:
+		if exigir_conclusao_vigilia_para_dormir and modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida and not ignorar_vigilia:
+			var aviso_v := "Vigília em curso (%ds)! Espione a janela, cheque o quadro de luz ou os rastros." % int(ceilf(tempo_vigilia_restante))
+			if label_tarefas:
+				label_tarefas.text = aviso_v
+			status_temporario.emit(aviso_v)
+			return
 		print("Você dormiu em segurança...")
 		dia_atual += 1
 		iniciar_novo_dia()
