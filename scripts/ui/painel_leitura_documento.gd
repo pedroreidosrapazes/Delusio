@@ -142,6 +142,7 @@ func abrir(titulo: String, texto: String, subtitulo: String = "") -> void:
 func fechar() -> void:
 	if not visible:
 		return
+	BancoAudioDelusio.tocar_2d(self, &"papel_fechar", -6.0, 0.05)
 	visible = false
 	if filtro_delusio != null:
 		filtro_delusio.definir_desfoque_fundo(0.0, false)

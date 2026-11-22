@@ -168,7 +168,7 @@ func _criar_coluna_vidro(eh_esquerdo: bool) -> VBoxContainer:
 	sv.own_world_3d = true
 	sv.transparent_bg = true
 	sv.msaa_3d = Viewport.MSAA_4X
-	sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	sv.render_target_update_mode = SubViewport.UPDATE_WHEN_PARENT_VISIBLE
 	vp_cont.add_child(sv)
 
 	var pivo := _configurar_cenario_3d(sv)
@@ -475,16 +475,27 @@ func _criar_pilula_3d(id: StringName, pos_mundo_vp: Vector3) -> RigidBody3D:
 
 	if modelo_inst == null:
 		var fallback_mesh := MeshInstance3D.new()
-		var cap_mesh := CapsuleMesh.new()
-		cap_mesh.radius = 0.08
-		cap_mesh.height = 0.30
-		fallback_mesh.mesh = cap_mesh
-		fallback_mesh.rotation.z = PI * 0.5
+		if String(id).contains("redondo"):
+			var cyl_mesh := CylinderMesh.new()
+			cyl_mesh.top_radius = 0.12
+			cyl_mesh.bottom_radius = 0.12
+			cyl_mesh.height = 0.08
+			fallback_mesh.mesh = cyl_mesh
+			tam_col = Vector3(0.24, 0.08, 0.24)
+		else:
+			var cap_mesh := CapsuleMesh.new()
+			cap_mesh.radius = 0.08
+			cap_mesh.height = 0.30
+			fallback_mesh.mesh = cap_mesh
+			fallback_mesh.rotation.z = PI * 0.5
+			tam_col = Vector3(0.30, 0.16, 0.16)
 		var sm := StandardMaterial3D.new()
-		sm.albedo_color = Color.WHITE if not dados.get("raro", false) else Color.BLACK
+		if dados.has("cor_placeholder") and dados["cor_placeholder"] is Color:
+			sm.albedo_color = dados["cor_placeholder"] as Color
+		else:
+			sm.albedo_color = Color.WHITE if not dados.get("raro", false) else Color.BLACK
 		fallback_mesh.material_override = sm
 		rb.add_child(fallback_mesh)
-		tam_col = Vector3(0.30, 0.16, 0.16)
 
 	rb.add_child(_criar_colisao_pilula(tam_col))
 	return rb
@@ -506,6 +517,10 @@ func abrir(vidros: Dictionary = {}) -> void:
 		pivo_esq.rotation = Vector3.ZERO
 	if pivo_dir != null:
 		pivo_dir.rotation = Vector3.ZERO
+	if subviewport_esq != null:
+		subviewport_esq.render_target_update_mode = SubViewport.UPDATE_WHEN_PARENT_VISIBLE
+	if subviewport_dir != null:
+		subviewport_dir.render_target_update_mode = SubViewport.UPDATE_WHEN_PARENT_VISIBLE
 
 	_popular_vidros()
 	_atualizar_textos()
@@ -518,6 +533,10 @@ func abrir(vidros: Dictionary = {}) -> void:
 
 func fechar() -> void:
 	visible = false
+	if subviewport_esq != null:
+		subviewport_esq.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	if subviewport_dir != null:
+		subviewport_dir.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	if filtro_delusio != null:
 		filtro_delusio.definir_desfoque_fundo(0.0, false)
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -638,6 +657,7 @@ func escolher(opcao: int) -> Dictionary:
 	if gerenciador != null:
 		resultado = gerenciador.aplicar_escolha(opcao, vidros_atuais)
 
+	BancoAudioDelusio.tocar_2d(self, &"pilula_consumir", -3.0, 0.04)
 	escolha_feita.emit(opcao, resultado)
 	fechar()
 	return resultado

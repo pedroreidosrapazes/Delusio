@@ -10,11 +10,13 @@ const MENU_ESCOLHA_MEDICAMENTOS := preload("res://scripts/ui/menu_escolha_medica
 const PAINEL_LEITURA_DOCUMENTO := preload("res://scripts/ui/painel_leitura_documento.gd")
 const PAINEL_LISTA_TAREFAS := preload("res://scripts/ui/painel_lista_tarefas.gd")
 const LEGENDA_RADIO_UI := preload("res://scripts/ui/legenda_radio_ui.gd")
+const TELA_GAME_OVER := preload("res://scripts/ui/tela_game_over.gd")
 
 @onready var label_tarefas: Label = $LabelTarefas
 @onready var reticula: ColorRect = $ColorRect
 
 @export var player: Player
+@export var permitir_atalhos_debug_em_historia: bool = false
 
 var _barra: Control
 var _slots: Array[Dictionary] = []
@@ -32,9 +34,13 @@ var _filtro_delusio: FiltroDelusioControlador
 var _label_prompt_interacao: Label
 var _label_timer_dia: Label
 var _label_estado_lanterna: Label
+var _label_banner_noite: Label
 var _alvo_focado_atual: Interactable = null
 var menu_medicamentos: MenuEscolhaMedicamentos = null
 var painel_leitura: PainelLeituraDocumento = null
+var _tela_game_over: TelaGameOver = null
+var _aguardando_banner_noite: bool = false
+var _tween_banner_noite: Tween = null
 
 
 func _ready() -> void:
@@ -52,6 +58,12 @@ func _ready() -> void:
 			GameManager.instance.tempo_dia_atualizado.connect(_on_tempo_dia_atualizado)
 		if GameManager.instance.has_signal("vigilia_progresso_atualizado"):
 			GameManager.instance.vigilia_progresso_atualizado.connect(_on_vigilia_progresso_atualizado)
+		if GameManager.instance.has_signal("protecao_captura_alterada"):
+			GameManager.instance.protecao_captura_alterada.connect(func(_ativa: bool): _atualizar_indicador_lanterna())
+		if GameManager.instance.has_signal("noite_sobrevivida"):
+			GameManager.instance.noite_sobrevivida.connect(_ao_noite_sobrevivida)
+		if GameManager.instance.has_signal("game_over_disparado"):
+			GameManager.instance.game_over_disparado.connect(_ao_game_over)
 		if _filtro_delusio:
 			_filtro_delusio.definir_estado_horario(GameManager.instance.horario_atual, true)
 		if DisplayServer.get_name() != "headless":
@@ -62,7 +74,9 @@ func _ready() -> void:
 	_criar_legenda_radio()
 	_criar_prompt_interacao()
 	_criar_indicadores_fase2()
+	_criar_banner_noite()
 	_criar_hotbar()
+	_criar_tela_game_over()
 
 	if player:
 		player.hotbar_alterada.connect(_sincronizar_hotbar)
@@ -80,6 +94,12 @@ func _ready() -> void:
 		_sincronizar_hotbar()
 	_atualizar_label_timer_dia()
 	_atualizar_indicador_lanterna()
+	call_deferred("_aplicar_configuracoes_salvas")
+
+
+func _aplicar_configuracoes_salvas() -> void:
+	var dados: Dictionary = ConfiguracoesUsuario.carregar()
+	ConfiguracoesUsuario.aplicar_todas(dados, get_tree(), false)
 
 
 func obter_painel_sequencia() -> PainelSequenciaInteracao:
@@ -138,7 +158,7 @@ func _criar_painel_lista_tarefas() -> void:
 	if _label_dica_lista_tarefas == null:
 		_label_dica_lista_tarefas = Label.new()
 		_label_dica_lista_tarefas.name = "LabelDicaListaTarefas"
-		_label_dica_lista_tarefas.position = Vector2(51.0, 68.0)
+		_label_dica_lista_tarefas.position = Vector2(36.0, 68.0)
 		_label_dica_lista_tarefas.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_label_dica_lista_tarefas.add_theme_font_size_override("font_size", 12)
 		_label_dica_lista_tarefas.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_AMBAR)
@@ -220,7 +240,7 @@ func _criar_indicadores_fase2() -> void:
 		_label_estado_lanterna.anchor_top = 1.0
 		_label_estado_lanterna.anchor_bottom = 1.0
 		_label_estado_lanterna.offset_left = 36.0
-		_label_estado_lanterna.offset_right = 380.0
+		_label_estado_lanterna.offset_right = 580.0
 		_label_estado_lanterna.offset_top = -54.0
 		_label_estado_lanterna.offset_bottom = -24.0
 		_label_estado_lanterna.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -230,6 +250,38 @@ func _criar_indicadores_fase2() -> void:
 		_label_estado_lanterna.add_theme_constant_override("shadow_offset_x", 1)
 		_label_estado_lanterna.add_theme_constant_override("shadow_offset_y", 1)
 		add_child(_label_estado_lanterna)
+
+
+func _criar_banner_noite() -> void:
+	if _label_banner_noite != null:
+		return
+	_label_banner_noite = Label.new()
+	_label_banner_noite.name = "LabelBannerNoiteSobrevivida"
+	_label_banner_noite.anchor_left = 0.5
+	_label_banner_noite.anchor_right = 0.5
+	_label_banner_noite.anchor_top = 0.0
+	_label_banner_noite.anchor_bottom = 0.0
+	_label_banner_noite.offset_left = -280.0
+	_label_banner_noite.offset_right = 280.0
+	_label_banner_noite.offset_top = 82.0
+	_label_banner_noite.offset_bottom = 122.0
+	_label_banner_noite.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_label_banner_noite.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_label_banner_noite.add_theme_font_size_override("font_size", 22)
+	_label_banner_noite.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_AMBAR)
+	_label_banner_noite.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
+	_label_banner_noite.add_theme_constant_override("shadow_offset_x", 2)
+	_label_banner_noite.add_theme_constant_override("shadow_offset_y", 2)
+	_label_banner_noite.visible = false
+	add_child(_label_banner_noite)
+
+
+func _criar_tela_game_over() -> void:
+	if _tela_game_over != null:
+		return
+	_tela_game_over = TELA_GAME_OVER.new()
+	_tela_game_over.name = "TelaGameOver"
+	add_child(_tela_game_over)
 
 
 func _on_tempo_dia_atualizado(_restante: float, _total: float, _horario: int) -> void:
@@ -275,6 +327,8 @@ func _atualizar_indicador_lanterna() -> void:
 		texto += "   |   [E] Sair da Janela"
 	elif player.esta_escondido():
 		texto += "   |   [E] Sair do Esconderijo"
+	if GameManager.instance != null and GameManager.instance.has_method("possui_protecao_captura_ativa") and GameManager.instance.possui_protecao_captura_ativa():
+		texto += "   |   Pílula: 2ª Chance"
 	_label_estado_lanterna.text = texto
 	_label_estado_lanterna.add_theme_color_override(
 		"font_color",
@@ -288,6 +342,10 @@ func obter_label_timer_dia() -> Label:
 
 func obter_label_estado_lanterna() -> Label:
 	return _label_estado_lanterna
+
+
+func obter_tela_game_over() -> TelaGameOver:
+	return _tela_game_over
 
 
 func _criar_painel_sequencia() -> void:
@@ -553,7 +611,7 @@ func _preparar_icone_silver_tape() -> void:
 	_viewport_icone_silver_tape.size = Vector2i(128, 128)
 	_viewport_icone_silver_tape.transparent_bg = true
 	_viewport_icone_silver_tape.own_world_3d = true
-	_viewport_icone_silver_tape.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_viewport_icone_silver_tape.render_target_update_mode = SubViewport.UPDATE_ONCE
 	add_child(_viewport_icone_silver_tape)
 
 	var mundo_icone := Node3D.new()
@@ -591,28 +649,88 @@ func _on_status_temporario(mensagem: String) -> void:
 		label_tarefas.text = mensagem
 
 
+func _ao_game_over(resumo: Dictionary) -> void:
+	_aguardando_banner_noite = false
+	if _tween_banner_noite and _tween_banner_noite.is_valid():
+		_tween_banner_noite.kill()
+	if _label_banner_noite != null:
+		_label_banner_noite.visible = false
+	if menu_medicamentos != null and menu_medicamentos.visible and menu_medicamentos.has_method("fechar"):
+		menu_medicamentos.fechar()
+	if painel_leitura != null and painel_leitura.visible and painel_leitura.has_method("fechar"):
+		painel_leitura.fechar()
+	if _painel_lista_tarefas != null and _painel_lista_tarefas.esta_aberta():
+		_painel_lista_tarefas.fechar()
+	if _tela_game_over != null:
+		_tela_game_over.abrir(resumo)
+
+
+func _ao_noite_sobrevivida(dia_concluido: int, dias_sobr: int, _novo_rec: bool) -> void:
+	if _label_banner_noite == null:
+		return
+	_label_banner_noite.text = "NOITE %d SOBREVIVIDA  •  NOITES: %d" % [dia_concluido, dias_sobr]
+	_label_banner_noite.visible = true
+
+	if DisplayServer.get_name() == "headless":
+		_label_banner_noite.modulate.a = 1.0
+		_aguardando_banner_noite = false
+		return
+
+	_aguardando_banner_noite = true
+	if _tween_banner_noite and _tween_banner_noite.is_valid():
+		_tween_banner_noite.kill()
+	_label_banner_noite.modulate.a = 0.0
+	_tween_banner_noite = create_tween()
+	_tween_banner_noite.tween_property(_label_banner_noite, "modulate:a", 1.0, 0.25)
+	_tween_banner_noite.tween_interval(1.35)
+	_tween_banner_noite.tween_property(_label_banner_noite, "modulate:a", 0.0, 0.35)
+	_tween_banner_noite.tween_callback(func() -> void:
+		_aguardando_banner_noite = false
+		if _label_banner_noite != null:
+			_label_banner_noite.visible = false
+		if GameManager.instance == null or not GameManager.instance.jogo_encerrado:
+			abrir_menu_medicamentos()
+	)
+
+
 func _on_dia_iniciado(_dia: int) -> void:
+	if GameManager.instance != null and GameManager.instance.jogo_encerrado:
+		return
+	if _tela_game_over != null:
+		_tela_game_over.fechar()
 	if _painel_lista_tarefas != null and _painel_lista_tarefas.esta_aberta():
 		_painel_lista_tarefas.atualizar_lista()
 	_atualizar_label_timer_dia()
 	_atualizar_indicador_lanterna()
-	if DisplayServer.get_name() != "headless":
+	if DisplayServer.get_name() != "headless" and not _aguardando_banner_noite:
 		abrir_menu_medicamentos()
 
 
+func _atalhos_debug_ativos() -> bool:
+	if GameManager.instance != null and GameManager.instance.has_method("esta_em_modo_debug"):
+		if GameManager.instance.esta_em_modo_debug():
+			return true
+		return permitir_atalhos_debug_em_historia and (OS.has_feature("editor") or OS.is_debug_build())
+	if GameManager.modo_jogo_selecionado == GameManager.MODO_DEBUG:
+		return true
+	return permitir_atalhos_debug_em_historia and (OS.has_feature("editor") or OS.is_debug_build())
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if GameManager.instance != null and GameManager.instance.jogo_encerrado:
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_X:
 			if (menu_medicamentos and menu_medicamentos.visible) or (painel_leitura and painel_leitura.visible) or (_painel_sequencia and _painel_sequencia.visible):
 				return
 			alternar_lista_tarefas()
 			get_viewport().set_input_as_handled()
-		elif event.keycode == KEY_P:
+		elif event.keycode == KEY_P and _atalhos_debug_ativos():
 			if menu_medicamentos and menu_medicamentos.visible:
 				menu_medicamentos.fechar()
 			else:
 				abrir_menu_medicamentos()
-		elif event.keycode == KEY_N and GameManager.instance:
+		elif event.keycode == KEY_N and GameManager.instance and _atalhos_debug_ativos():
 			if GameManager.instance.horario_atual != 2:
 				GameManager.instance.iniciar_evento_terror()
 			else:

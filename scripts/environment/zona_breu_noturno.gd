@@ -17,11 +17,15 @@ var jogador_no_breu: bool = false
 var _jogador_atual: Player = null
 var _ultima_pos_fora: Vector3 = Vector3.ZERO
 var _aviso_cooldown: float = 0.0
+var _particulas_breu: GPUParticles3D = null
 
 
 func _ready() -> void:
 	add_to_group("zona_breu_noturno")
 	monitoring = true
+	if get_node_or_null("ParticulasBreuSul") == null:
+		_particulas_breu = FabricaParticulasDelusio.criar_nevoa_breu()
+		add_child(_particulas_breu)
 	if not body_entered.is_connected(_ao_entrar_corpo):
 		body_entered.connect(_ao_entrar_corpo)
 	if not body_exited.is_connected(_ao_sair_corpo):
@@ -111,6 +115,7 @@ func validar_entrada_ou_recuar(player: Player) -> bool:
 		player.velocity.z = 0.0
 		if _aviso_cooldown <= 0.0:
 			_aviso_cooldown = 1.5
+			BancoAudioDelusio.tocar_2d(self, &"lanterna_bloqueada", -3.0, 0.04)
 			if GameManager.instance != null:
 				GameManager.instance.status_temporario.emit(motivo)
 		entrada_bloqueada.emit(motivo)

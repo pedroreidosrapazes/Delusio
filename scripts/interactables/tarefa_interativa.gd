@@ -40,6 +40,19 @@ func _executar_interacao(_jogador: Node3D) -> void:
 		if child is CollisionShape3D:
 			child.disabled = true
 
+	var sfx_id: StringName = &"tarefa_agua"
+	var tipo_burst: StringName = &"agua"
+	match id_tarefa:
+		"podar_cerca":
+			sfx_id = &"tarefa_cerca"
+			tipo_burst = &"folhas"
+		"consertar_bomba":
+			sfx_id = &"tarefa_bomba"
+			tipo_burst = &"faiscas"
+	var pai_fx: Node = get_parent() if get_parent() != null else self
+	BancoAudioDelusio.tocar_3d(pai_fx, sfx_id, global_position, -2.0, 18.0)
+	FabricaParticulasDelusio.disparar_burst_tarefa(pai_fx, tipo_burst, global_position)
+
 	# Notifica o GameManager
 	if GameManager.instance:
 		GameManager.instance.concluir_tarefa(id_tarefa)

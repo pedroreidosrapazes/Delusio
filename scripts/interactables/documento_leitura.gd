@@ -56,6 +56,7 @@ func _aplicar_visual_modular() -> void:
 
 func _executar_interacao(_jogador: Node3D) -> void:
 	lido = true
+	BancoAudioDelusio.tocar_2d(self, &"papel_abrir", -5.0, 0.06)
 	var painel := _obter_painel_leitura()
 	if painel != null and painel.has_method("abrir"):
 		painel.abrir(titulo_documento, texto_conteudo, subtitulo_data)

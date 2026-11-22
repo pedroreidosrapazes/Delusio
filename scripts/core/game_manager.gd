@@ -13,10 +13,15 @@ signal horario_alterado(estado: int)
 signal tempo_dia_atualizado(restante: float, total: float, horario: int)
 signal vigilia_progresso_atualizado(progresso: float, concluida: bool, resumo: String)
 signal jogador_capturado_na_noite(monstro: Node3D)
+signal segunda_chance_consumida(monstro: Node3D)
+signal protecao_captura_alterada(ativa: bool)
+signal noite_sobrevivida(dia_concluido: int, dias_sobrevividos: int, novo_recorde: bool)
+signal game_over_disparado(resumo: Dictionary)
 signal documento_lido_registrado(documento_id: StringName)
 
 enum ModoNoturno { NENHUM = 0, VIGILIA_DOMESTICA = 1, TAREFAS_PENDENTES = 2 }
 enum ModoJogo { ENDLESS = 0, HISTORIA = 1 }
+const MODO_DEBUG: int = ModoJogo.ENDLESS
 static var modo_jogo_selecionado: int = ModoJogo.ENDLESS
 
 var modo_noturno: int = ModoNoturno.NENHUM
@@ -54,6 +59,15 @@ var documentos_lidos: Array[StringName] = []
 var jornal_silhueta_lido: bool = false
 var estagio_introducao_silhueta: int = Silhueta.EstagioIntroducao.NAO_INICIADA
 
+var jogo_encerrado: bool = false
+var cargas_segunda_chance_restantes: int = 0
+var capturas_sofridas_na_noite: int = 0
+var dias_sobrevividos: int = 0
+var tarefas_concluidas_rodada: int = 0
+var duracao_vigilia_efetiva: float = 45.0
+var ultimo_resumo_game_over: Dictionary = {}
+var caminho_save_endless: String = RegistroEndless.CAMINHO_PADRAO
+
 @export_category("Referências da Cena")
 @export var label_tarefas: Label
 @export var silhueta: Node3D
@@ -78,12 +92,16 @@ static func definir_modo_jogo(modo: int) -> void:
 	modo_jogo_selecionado = modo
 
 
+func esta_em_modo_debug() -> bool:
+	return modo_jogo == MODO_DEBUG
+
+
 func esta_em_modo_endless() -> bool:
-	return modo_jogo == ModoJogo.ENDLESS
+	return esta_em_modo_debug()
 
 
 func obter_nome_modo_jogo() -> String:
-	return "MODO HISTÓRIA" if modo_jogo == ModoJogo.HISTORIA else "MODO ENDLESS"
+	return "MODO HISTÓRIA" if modo_jogo == ModoJogo.HISTORIA else "DEBUG MODE"
 
 
 func _ready() -> void:
@@ -93,11 +111,70 @@ func _ready() -> void:
 		gerenciador_medicamentos.name = "GerenciadorMedicamentos"
 		add_child(gerenciador_medicamentos)
 
+	if gerenciador_medicamentos.has_signal("escolha_aplicada") and not gerenciador_medicamentos.escolha_aplicada.is_connected(_ao_aplicar_escolha_medicamentos):
+		gerenciador_medicamentos.escolha_aplicada.connect(_ao_aplicar_escolha_medicamentos)
+
 	_garantir_diretor_eventos_noite()
 	_garantir_rondante_cena()
 	_garantir_esconderijo_cena()
 	_conectar_silhueta_introducao()
 	iniciar_novo_dia()
+
+
+func _pode_persistir_save_endless() -> bool:
+	if caminho_save_endless != RegistroEndless.CAMINHO_PADRAO:
+		return true
+	return DisplayServer.get_name() != "headless"
+
+
+func _calcular_cargas_segunda_chance() -> int:
+	if gerenciador_medicamentos != null and gerenciador_medicamentos.has_method("possui_protecao_segunda_captura"):
+		return 1 if gerenciador_medicamentos.possui_protecao_segunda_captura() else 0
+	return 0
+
+
+func possui_protecao_captura_ativa() -> bool:
+	return cargas_segunda_chance_restantes > 0
+
+
+func obter_parametros_dificuldade_dia(dia: int = -1) -> Dictionary:
+	var d: int = dia if dia > 0 else dia_atual
+	var nivel: int = maxi(0, d - 1) if modo_jogo == ModoJogo.ENDLESS else 0
+	return {
+		"nivel": nivel,
+		"mult_duracao_dia": maxf(0.55, 1.0 - float(nivel) * 0.06),
+		"duracao_vigilia": clampf(duracao_vigilia_segundos + float(nivel) * 4.0, duracao_vigilia_segundos, 75.0),
+		"mult_velocidade_monstros": minf(1.38, 1.0 + float(nivel) * 0.045),
+		"mult_agressividade_silhueta": minf(1.65, 1.0 + float(nivel) * 0.08),
+		"mult_visao_rondante": minf(1.35, 1.0 + float(nivel) * 0.04),
+		"mult_intervalo_eventos": maxf(0.55, 1.0 - float(nivel) * 0.05)
+	}
+
+
+func _ao_aplicar_escolha_medicamentos(_opcao: int, _resultado: Dictionary) -> void:
+	cargas_segunda_chance_restantes = _calcular_cargas_segunda_chance()
+	protecao_captura_alterada.emit(cargas_segunda_chance_restantes > 0)
+
+	if horario_atual == 0 and not jogo_encerrado:
+		var mult_t: float = 0.0
+		if gerenciador_medicamentos != null:
+			mult_t = gerenciador_medicamentos.obter_modificador("mult_tempo_dia", 0.0)
+		var params: Dictionary = obter_parametros_dificuldade_dia(dia_atual)
+		var mult_dia_endless: float = float(params.get("mult_duracao_dia", 1.0))
+		var nova_duracao: float = maxf(30.0, duracao_dia_segundos * mult_dia_endless * (1.0 + mult_t))
+		var frac_restante: float = clampf(tempo_dia_restante / maxf(1.0, duracao_dia_efetiva), 0.0, 1.0)
+		duracao_dia_efetiva = nova_duracao
+		tempo_dia_restante = maxf(1.0, duracao_dia_efetiva * frac_restante)
+		tempo_dia_atualizado.emit(tempo_dia_restante, duracao_dia_efetiva, horario_atual)
+
+	if gerenciador_medicamentos != null and gerenciador_medicamentos.obter_modificador("resolver_dia_imediato", 0.0) > 0.0:
+		if tarefas_concluidas < tarefas_totais:
+			tarefas_concluidas = tarefas_totais
+			tarefas_concluidas_rodada += tarefas_totais
+			atualizar_hud()
+			if modo_noturno == ModoNoturno.NENHUM:
+				modo_noturno = ModoNoturno.VIGILIA_DOMESTICA
+			iniciar_evento_terror()
 
 
 func _conectar_silhueta_introducao() -> void:
@@ -198,6 +275,8 @@ func obter_hora_formatada() -> String:
 
 
 func processar_tempo_dia(delta: float) -> void:
+	if jogo_encerrado:
+		return
 	if horario_atual == 2:
 		if modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida and tempo_vigilia_restante > 0.0:
 			tempo_vigilia_restante = maxf(0.0, tempo_vigilia_restante - delta)
@@ -205,7 +284,7 @@ func processar_tempo_dia(delta: float) -> void:
 			if seg_v != _ultimo_segundo_emitido:
 				_ultimo_segundo_emitido = seg_v
 				_emitir_progresso_vigilia()
-				tempo_dia_atualizado.emit(tempo_vigilia_restante, duracao_vigilia_segundos, horario_atual)
+				tempo_dia_atualizado.emit(tempo_vigilia_restante, maxf(1.0, duracao_vigilia_efetiva), horario_atual)
 			if tempo_vigilia_restante <= 0.0:
 				concluir_vigilia_domestica()
 		return
@@ -238,6 +317,11 @@ func _process(delta: float) -> void:
 
 
 func iniciar_novo_dia() -> void:
+	jogo_encerrado = false
+	capturas_sofridas_na_noite = 0
+	ultimo_resumo_game_over.clear()
+	cargas_segunda_chance_restantes = _calcular_cargas_segunda_chance()
+
 	tarefas_concluidas = 0
 	horario_atual = 0
 	modo_noturno = ModoNoturno.NENHUM
@@ -250,10 +334,13 @@ func iniciar_novo_dia() -> void:
 	_ultimo_segundo_emitido = -1
 	_limpar_rastros()
 
-	var mult_t := 0.0
+	var mult_t: float = 0.0
 	if gerenciador_medicamentos != null:
 		mult_t = gerenciador_medicamentos.obter_modificador("mult_tempo_dia", 0.0)
-	tempo_dia_restante = maxf(30.0, duracao_dia_segundos * (1.0 + mult_t))
+	var params: Dictionary = obter_parametros_dificuldade_dia(dia_atual)
+	var mult_dia_endless: float = float(params.get("mult_duracao_dia", 1.0))
+	duracao_vigilia_efetiva = float(params.get("duracao_vigilia", duracao_vigilia_segundos))
+	tempo_dia_restante = maxf(30.0, duracao_dia_segundos * mult_dia_endless * (1.0 + mult_t))
 	duracao_dia_efetiva = tempo_dia_restante
 
 	if dia_atual > 1 and estagio_introducao_silhueta != Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL:
@@ -303,6 +390,7 @@ func iniciar_novo_dia() -> void:
 		tarefas_concluidas = tarefas_totais
 
 	atualizar_hud()
+	protecao_captura_alterada.emit(cargas_segunda_chance_restantes > 0)
 	tempo_dia_atualizado.emit(tempo_dia_restante, duracao_dia_efetiva, horario_atual)
 	print("--- DIA %d INICIADO ---" % dia_atual)
 	dia_iniciado.emit(dia_atual)
@@ -316,7 +404,10 @@ func progredir_tarefa(_id_tarefa: String = "", _quantidade: int = 1) -> void:
 
 
 func concluir_tarefa(_id_tarefa: String = "") -> void:
+	if jogo_encerrado:
+		return
 	tarefas_concluidas += 1
+	tarefas_concluidas_rodada += 1
 	atualizar_hud()
 
 	if tarefas_concluidas >= tarefas_totais:
@@ -347,7 +438,7 @@ func atualizar_hud() -> void:
 
 
 func _emitir_progresso_vigilia() -> void:
-	var total := maxf(1.0, duracao_vigilia_segundos)
+	var total := maxf(1.0, duracao_vigilia_efetiva)
 	var progresso := 1.0 if vigilia_concluida else clampf(1.0 - (tempo_vigilia_restante / total), 0.0, 1.0)
 	var resumo := "Vigília concluída!" if vigilia_concluida else "Vigília: %ds" % int(ceilf(tempo_vigilia_restante))
 	vigilia_progresso_atualizado.emit(progresso, vigilia_concluida, resumo)
@@ -355,7 +446,9 @@ func _emitir_progresso_vigilia() -> void:
 
 func ativar_vigilia_domestica() -> void:
 	pontos_vigilia_ativos = true
-	tempo_vigilia_restante = duracao_vigilia_segundos
+	var params: Dictionary = obter_parametros_dificuldade_dia(dia_atual)
+	duracao_vigilia_efetiva = float(params.get("duracao_vigilia", duracao_vigilia_segundos))
+	tempo_vigilia_restante = duracao_vigilia_efetiva
 	vigilia_concluida = false
 	_ultimo_segundo_emitido = int(ceilf(tempo_vigilia_restante))
 	recargas_luz_disponiveis = 2
@@ -508,20 +601,84 @@ func iniciar_evento_terror() -> void:
 
 
 func registrar_captura_monstro(monstro: Node3D, player: Player) -> void:
+	if jogo_encerrado:
+		return
 	if player != null and player.esta_em_interacao_sequencia():
 		player.cancelar_interacao_sequencia()
-	if diretor_eventos_noite != null and diretor_eventos_noite.has_method("registrar_alivio_pos_susto"):
-		diretor_eventos_noite.registrar_alivio_pos_susto()
+	if player != null and player.has_method("sair_vigilia_janela") and player.esta_olhando_janela():
+		player.sair_vigilia_janela()
 	if get_tree() != null and get_tree().current_scene != null:
 		for n in get_tree().current_scene.find_children("*", "FiltroDelusioControlador", true, false):
 			if n.has_method("registrar_impulso_tensao"):
-				n.registrar_impulso_tensao(0.55)
+				n.registrar_impulso_tensao(0.65)
 				break
-	status_temporario.emit("Você foi alcançado na escuridão! Recue para um abrigo!")
+
 	jogador_capturado_na_noite.emit(monstro)
+
+	if cargas_segunda_chance_restantes > 0:
+		cargas_segunda_chance_restantes = 0
+		capturas_sofridas_na_noite += 1
+		if diretor_eventos_noite != null and diretor_eventos_noite.has_method("registrar_alivio_pos_susto"):
+			diretor_eventos_noite.registrar_alivio_pos_susto(8.0)
+		protecao_captura_alterada.emit(false)
+		segunda_chance_consumida.emit(monstro)
+		status_temporario.emit("A pílula segurou o golpe! Próxima captura será fatal — recue!")
+	else:
+		disparar_game_over(monstro)
+
+
+func disparar_game_over(monstro: Node3D = null) -> Dictionary:
+	if jogo_encerrado:
+		return ultimo_resumo_game_over
+	jogo_encerrado = true
+
+	var nome_causa: String = "Criatura Noturna"
+	if monstro != null and is_instance_valid(monstro):
+		if "config" in monstro and monstro.config != null and "nome_criatura" in monstro.config:
+			var nome_cfg: String = str(monstro.config.nome_criatura).strip_edges()
+			if not nome_cfg.is_empty():
+				nome_causa = nome_cfg
+		elif monstro is Silhueta or str(monstro.name).to_lower().contains("silhueta"):
+			nome_causa = "Silhueta"
+		elif monstro is RondanteFazenda or str(monstro.name).to_lower().contains("rondante"):
+			nome_causa = "Rondante da Fazenda"
+
+	var reg: Dictionary
+	if _pode_persistir_save_endless():
+		reg = RegistroEndless.registrar_fim_rodada(dias_sobrevividos, tarefas_concluidas_rodada, caminho_save_endless)
+	else:
+		reg = RegistroEndless.carregar(caminho_save_endless)
+		reg["novo_recorde"] = dias_sobrevividos > int(reg.get("recorde_dias", 0))
+		reg["recorde_dias"] = maxi(int(reg.get("recorde_dias", 0)), dias_sobrevividos)
+		reg["recorde_tarefas"] = maxi(int(reg.get("recorde_tarefas", 0)), tarefas_concluidas_rodada)
+
+	ultimo_resumo_game_over = {
+		"causa": nome_causa,
+		"dia_atual": dia_atual,
+		"dias_sobrevividos": dias_sobrevividos,
+		"tarefas_rodada": tarefas_concluidas_rodada,
+		"recorde_dias": int(reg.get("recorde_dias", dias_sobrevividos)),
+		"recorde_tarefas": int(reg.get("recorde_tarefas", tarefas_concluidas_rodada)),
+		"novo_recorde": bool(reg.get("novo_recorde", false)),
+		"modo": obter_nome_modo_jogo()
+	}
+
+	status_temporario.emit("Você foi alcançado por %s." % nome_causa)
+	game_over_disparado.emit(ultimo_resumo_game_over)
+	return ultimo_resumo_game_over
+
+
+func reiniciar_rodada_endless() -> void:
+	jogo_encerrado = false
+	GameManager.definir_modo_jogo(ModoJogo.ENDLESS)
+	if get_tree() != null:
+		get_tree().paused = false
+		get_tree().reload_current_scene()
 
 
 func tentar_dormir(ignorar_vigilia: bool = false) -> void:
+	if jogo_encerrado:
+		return
 	if tarefas_concluidas >= tarefas_totais:
 		if exigir_conclusao_vigilia_para_dormir and modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida and not ignorar_vigilia:
 			var aviso_v := "Vigília em curso (%ds)! Espione a janela, cheque o quadro de luz ou os rastros." % int(ceilf(tempo_vigilia_restante))
@@ -530,6 +687,13 @@ func tentar_dormir(ignorar_vigilia: bool = false) -> void:
 			status_temporario.emit(aviso_v)
 			return
 		print("Você dormiu em segurança...")
+		var dia_concluido: int = dia_atual
+		dias_sobrevividos += 1
+		var novo_rec: bool = false
+		if _pode_persistir_save_endless():
+			var reg: Dictionary = RegistroEndless.registrar_progresso_noite(dias_sobrevividos, tarefas_concluidas_rodada, caminho_save_endless)
+			novo_rec = bool(reg.get("novo_recorde", false))
+		noite_sobrevivida.emit(dia_concluido, dias_sobrevividos, novo_rec)
 		dia_atual += 1
 		iniciar_novo_dia()
 	else:

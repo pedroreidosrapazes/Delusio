@@ -24,6 +24,7 @@
 [ext_resource type="Script" path="res://scripts/interactables/janela_vigilia.gd" id="24_janelavig"]
 [ext_resource type="PackedScene" path="res://scenes/props/esconderijo_patio.tscn" id="25_escpatio"]
 [ext_resource type="PackedScene" path="res://scenes/props/documento_rondante.tscn" id="26_docrond"]
+[ext_resource type="Script" path="res://scripts/audio/gerenciador_audio_mundo.gd" id="27_audiomundo"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.45
@@ -301,3 +302,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.571, 56)
 
 [node name="HookObjetivoBreu_2" type="Marker3D" parent="LayoutMapaFase1/Setor4_ZonaBreuNoturno"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.571, 60)
+
+[node name="GerenciadorAudioMundo" type="Node" parent="."]
+script = ExtResource("27_audiomundo")

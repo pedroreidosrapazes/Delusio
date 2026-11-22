@@ -66,11 +66,11 @@ func _teste_1_catalogo_medicamentos_sem_numeros() -> void:
 	var gerente_med := GerenciadorMedicamentos.new()
 	var catalogo := gerente_med.obter_catalogo()
 
-	_verificar(catalogo.size() == 12, "O catálogo deve conter exatamente 12 variações de medicamentos (atual: %d)." % catalogo.size())
+	_verificar(catalogo.size() == 13, "O catálogo deve conter exatamente 13 variações de medicamentos (atual: %d)." % catalogo.size())
 
 	var loot_padrao := gerente_med.obter_loot_table_padrao()
 	var loot_rara := gerente_med.obter_loot_table_rara()
-	_verificar(loot_padrao.size() == 11, "A loot table padrão deve conter 11 medicamentos (atual: %d)." % loot_padrao.size())
+	_verificar(loot_padrao.size() == 12, "A loot table padrão deve conter 12 medicamentos (atual: %d)." % loot_padrao.size())
 	_verificar(loot_rara.size() == 1, "A loot table rara deve conter 1 medicamento (atual: %d)." % loot_rara.size())
 	_verificar(loot_rara.has(&"med_4_oval"), "O medicamento raro deve ser 'med_4_oval'.")
 

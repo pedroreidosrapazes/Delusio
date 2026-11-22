@@ -75,11 +75,22 @@ func _process(delta: float) -> void:
 	processar_diretor(delta)
 
 
+func _obter_intervalo_efetivo() -> float:
+	var gerente := GameManager.instance
+	var mult := 1.0
+	if gerente != null and gerente.has_method("obter_parametros_dificuldade_dia"):
+		var params: Dictionary = gerente.obter_parametros_dificuldade_dia()
+		mult = float(params.get("mult_intervalo_eventos", 1.0))
+	return maxf(4.5, intervalo_min_eventos * mult)
+
+
 func processar_diretor(delta: float) -> void:
 	if not ativo:
 		return
 
 	var gerente := GameManager.instance
+	if gerente != null and gerente.jogo_encerrado:
+		return
 	if gerente != null and gerente.horario_atual != 2:
 		desativar()
 		return
@@ -96,8 +107,9 @@ func processar_diretor(delta: float) -> void:
 
 	coordenar_monstros(delta)
 
+	var intervalo_efetivo: float = _obter_intervalo_efetivo()
 	if not evento_em_andamento and cooldown_restante <= 0.0 and janela_alivio_restante <= 0.0:
-		var limiar := maxf(intervalo_min_eventos, lerpf(20.0, intervalo_min_eventos, clampf(nivel_tensao, 0.0, 1.0)))
+		var limiar := maxf(intervalo_efetivo, lerpf(maxf(intervalo_efetivo * 1.8, 12.0), intervalo_efetivo, clampf(nivel_tensao, 0.0, 1.0)))
 		if tempo_desde_ultimo_evento >= limiar:
 			disparar_proximo_evento()
 
@@ -168,6 +180,8 @@ func disparar_queda_fusivel(duracao: float = -1.0, forcar: bool = false) -> Dict
 		if gerente.pontos_vigilia_ativos:
 			gerente.pontos_vigilia_ativos = false
 		gerente.status_temporario.emit("Queda de fusível! As luzes da casa falharam temporariamente!")
+	if is_inside_tree():
+		BancoAudioDelusio.tocar_2d(self, &"fusivel_queda", -3.0, 0.03)
 
 	var casa := _obter_casa_controlador()
 	if casa != null and casa.has_method("definir_queda_energia"):
@@ -328,7 +342,7 @@ func coordenar_monstros(delta: float) -> void:
 
 func _registrar_disparo(tipo: StringName, dados: Dictionary) -> void:
 	tempo_desde_ultimo_evento = 0.0
-	cooldown_restante = intervalo_min_eventos
+	cooldown_restante = _obter_intervalo_efetivo()
 	historico_eventos.append(tipo)
 	evento_disparado.emit(tipo, dados)
 
@@ -390,10 +404,17 @@ func _garantir_marcadores_som() -> void:
 	elif get_parent() != null:
 		pai_alvo = get_parent()
 
+	var sfx_por_marcador := {
+		"PortaJanelaCasa": &"evento_porta_janela",
+		"MadeiraCeleiro": &"evento_madeira_celeiro",
+		"GalhosAtrasJogador": &"evento_galhos_atras"
+	}
+
 	for nome_m in specs.keys():
 		var m := marcadores_som.get(nome_m, null) as Marker3D
 		if m == null or not is_instance_valid(m):
 			m = pai_alvo.get_node_or_null(nome_m) as Marker3D
+		var id_sfx_marcador: StringName = StringName(sfx_por_marcador.get(nome_m, &"evento_madeira_celeiro"))
 		if m == null:
 			m = Marker3D.new()
 			m.name = nome_m
@@ -402,16 +423,22 @@ func _garantir_marcadores_som() -> void:
 			var audio := AudioStreamPlayer3D.new()
 			audio.name = "AudioStreamPlayer3D"
 			audio.max_distance = 30.0
+			audio.bus = BancoAudioDelusio.resolver_bus(&"SFX")
+			audio.stream = BancoAudioDelusio.obter_sfx(id_sfx_marcador)
 			m.add_child(audio)
 			pai_alvo.add_child(m)
 		else:
 			if not m.is_in_group("marcadores_som_noite"):
 				m.add_to_group("marcadores_som_noite")
-			if m.get_node_or_null("AudioStreamPlayer3D") == null:
-				var audio := AudioStreamPlayer3D.new()
-				audio.name = "AudioStreamPlayer3D"
-				audio.max_distance = 30.0
-				m.add_child(audio)
+			var audio_existente := m.get_node_or_null("AudioStreamPlayer3D") as AudioStreamPlayer3D
+			if audio_existente == null:
+				audio_existente = AudioStreamPlayer3D.new()
+				audio_existente.name = "AudioStreamPlayer3D"
+				audio_existente.max_distance = 30.0
+				m.add_child(audio_existente)
+			audio_existente.bus = BancoAudioDelusio.resolver_bus(&"SFX")
+			if audio_existente.stream == null:
+				audio_existente.stream = BancoAudioDelusio.obter_sfx(id_sfx_marcador)
 		marcadores_som[nome_m] = m
 
 

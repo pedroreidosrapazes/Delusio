@@ -83,6 +83,7 @@ var _rot_janela_yaw: float = 0.0
 var _rot_janela_pitch: float = 0.0
 var _cooldown_dica_lanterna: float = 0.0
 var _timer_som_movimento: float = 0.0
+var particulas_poeira_lanterna: GPUParticles3D = null
 
 
 func _ready() -> void:
@@ -93,6 +94,10 @@ func _ready() -> void:
 	_garantir_luz_preenchimento_lanterna()
 	if luz_lanterna:
 		_aplicar_configuracao_lanterna()
+	particulas_poeira_lanterna = FabricaParticulasDelusio.criar_poeira_lanterna()
+	var pai_particulas: Node = lanterna if lanterna != null else camera
+	if pai_particulas != null:
+		pai_particulas.add_child(particulas_poeira_lanterna)
 	_atualizar_aparencia_lanterna()
 	call_deferred("_conectar_sinais_monstros_lanterna")
 
@@ -303,11 +308,16 @@ func alternar_lanterna() -> void:
 	if not _lanterna_equipada:
 		return
 	if _luz_lanterna_acesa and _deve_bloquear_desligar_lanterna_zona():
+		if is_inside_tree():
+			BancoAudioDelusio.tocar_2d(self, &"lanterna_bloqueada", -4.0, 0.03)
 		if GameManager.instance != null:
 			GameManager.instance.status_temporario.emit("Escuro demais para apagar a lanterna aqui!")
 		return
 	_luz_lanterna_acesa = not _luz_lanterna_acesa
 	_atualizar_aparencia_lanterna()
+	if is_inside_tree():
+		var id_sfx: StringName = &"lanterna_ligar" if _luz_lanterna_acesa else &"lanterna_desligar"
+		BancoAudioDelusio.tocar_2d(self, id_sfx, -5.0, 0.04)
 	lanterna_estado_alterado.emit(esta_com_lanterna_acesa())
 
 
@@ -356,6 +366,8 @@ func entrar_vigilia_janela(janela: Node) -> void:
 		elif janela is Node3D:
 			_base_janela_global = (janela as Node3D).global_transform
 		_atualizar_camera_janela()
+	if is_inside_tree():
+		BancoAudioDelusio.tocar_2d(self, &"janela_entrar", -5.0, 0.04)
 	vigilia_janela_alterada.emit(true)
 
 
@@ -371,6 +383,8 @@ func sair_vigilia_janela() -> void:
 		_atualizar_rotacao_camera()
 	if janela != null and is_instance_valid(janela) and janela.has_method("notificar_saida_janela"):
 		janela.notificar_saida_janela(self)
+	if is_inside_tree():
+		BancoAudioDelusio.tocar_2d(self, &"janela_sair", -5.0, 0.04)
 	vigilia_janela_alterada.emit(false)
 
 
@@ -425,9 +439,12 @@ func obter_slot(indice: int) -> Dictionary:
 func selecionar_slot(indice: int) -> void:
 	if indice < 0 or indice >= HOTBAR_SLOTS:
 		return
+	var trocou := _indice_slot_selecionado != indice
 	_indice_slot_selecionado = indice
 	_lanterna_equipada = _slots_hotbar[indice]["id"] == &"lanterna"
 	_atualizar_aparencia_lanterna()
+	if trocou and is_inside_tree():
+		BancoAudioDelusio.tocar_2d(self, &"hotbar_troca", -10.0, 0.04)
 	lanterna_estado_alterado.emit(esta_com_lanterna_acesa())
 	hotbar_selecionada.emit(indice)
 
@@ -547,6 +564,14 @@ func _atualizar_aparencia_lanterna() -> void:
 			_aplicar_configuracao_lanterna()
 	if luz_preenchimento_lanterna != null and is_instance_valid(luz_preenchimento_lanterna):
 		luz_preenchimento_lanterna.visible = acesa
+	_atualizar_particulas_lanterna()
+
+
+func _atualizar_particulas_lanterna() -> void:
+	if particulas_poeira_lanterna == null or not is_instance_valid(particulas_poeira_lanterna):
+		return
+	var noite: bool = GameManager.instance != null and GameManager.instance.horario_atual == 2
+	particulas_poeira_lanterna.emitting = esta_com_lanterna_acesa() and noite and is_inside_tree()
 
 
 func calcular_fator_instabilidade_lanterna(distancia: float) -> float:
@@ -642,6 +667,7 @@ func _process(delta: float) -> void:
 			_definir_olhar_para_tras(pressionado)
 
 	_processar_instabilidade_lanterna(delta)
+	_atualizar_particulas_lanterna()
 	_atualizar_reticula()
 
 
@@ -723,6 +749,15 @@ func _physics_process(delta: float) -> void:
 		_timer_som_movimento += delta
 		if _timer_som_movimento >= 0.45:
 			_timer_som_movimento = 0.0
+			if is_inside_tree():
+				var em_madeira := false
+				if get_tree() != null:
+					var casa_ctrl: Node = get_tree().get_first_node_in_group("casa_controlador")
+					if casa_ctrl != null and casa_ctrl.has_method("contem_ponto_interno"):
+						em_madeira = bool(casa_ctrl.contem_ponto_interno(global_position))
+				var id_passo: StringName = &"passo_madeira" if em_madeira else &"passo_terra"
+				var vol_passo: float = -7.0 if esta_correndo else -12.0
+				BancoAudioDelusio.tocar_2d(self, id_passo, vol_passo, 0.09)
 			if esta_correndo:
 				emitir_som(18.0, "corrida")
 			else:

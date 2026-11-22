@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/ui/menu_pausa.gd" id="1_pausa"]
 [ext_resource type="Shader" path="res://shaders/post_process/vinheta_analogica_ui.gdshader" id="2_shader_vinheta"]
+[ext_resource type="PackedScene" path="res://assets/ui/diario_menu.glb" id="3_diario_glb"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vinheta_pausa"]
 shader = ExtResource("2_shader_vinheta")
@@ -10,6 +11,15 @@ shader_parameter/suavidade_vinheta = 0.58
 shader_parameter/intensidade_grao = 0.032
 shader_parameter/aberracao_cromatica = 0.0014
 shader_parameter/linhas_vhs = 0.018
+
+[sub_resource type="Environment" id="Environment_diario3d"]
+background_mode = 1
+background_color = Color(0, 0, 0, 0)
+ambient_light_source = 2
+ambient_light_color = Color(0.86, 0.81, 0.73, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 2
+tonemap_exposure = 1.0
 
 [node name="CanvasLayer_Pausa" type="CanvasLayer"]
 process_mode = 3
@@ -31,9 +41,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.027451, 0.027451, 0.0313726, 0.82)
+color = Color(0.027451, 0.027451, 0.0313726, 0.78)
 
 [node name="StatusCanto" type="MarginContainer" parent="MenuPausa"]
+visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -59,173 +70,372 @@ text = "DIA 1  //  PERÍODO: DIURNO"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.721569, 0.52549, 0.231373, 1)
 theme_override_font_sizes/font_size = 12
-text = "FAZENDA ISOLADA  |  TAREFAS: 0 / 3"
+text = "DEBUG MODE  |  TAREFAS: 0 / 3"
 
-[node name="PainelPausa" type="PanelContainer" parent="MenuPausa"]
-custom_minimum_size = Vector2(360, 0)
+[node name="PalcoDiario" type="AspectRatioContainer" parent="MenuPausa"]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -180.0
-offset_top = -140.0
-offset_right = 180.0
-offset_bottom = 140.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 42.0
+offset_right = -40.0
+offset_bottom = -28.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+ratio = 1.68
 
-[node name="VBoxPausa" type="VBoxContainer" parent="MenuPausa/PainelPausa"]
+[node name="DiarioViewportContainer" type="SubViewportContainer" parent="MenuPausa/PalcoDiario"]
 layout_mode = 2
-theme_override_constants/separation = 12
-alignment = 1
+mouse_filter = 2
+stretch = true
 
-[node name="TagPausa" type="Label" parent="MenuPausa/PainelPausa/VBoxPausa"]
+[node name="SubViewport" type="SubViewport" parent="MenuPausa/PalcoDiario/DiarioViewportContainer"]
+own_world_3d = true
+transparent_bg = true
+handle_input_locally = false
+msaa_3d = 1
+size = Vector2i(970, 578)
+render_target_update_mode = 3
+process_mode = 3
+
+[node name="CenaDiario3D" type="Node3D" parent="MenuPausa/PalcoDiario/DiarioViewportContainer/SubViewport"]
+process_mode = 3
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="MenuPausa/PalcoDiario/DiarioViewportContainer/SubViewport/CenaDiario3D"]
+environment = SubResource("Environment_diario3d")
+
+[node name="LuzPrincipalDiario" type="DirectionalLight3D" parent="MenuPausa/PalcoDiario/DiarioViewportContainer/SubViewport/CenaDiario3D"]
+transform = Transform3D(0.951057, 0.145022, -0.272786, 0, 0.882948, 0.469472, 0.309017, -0.446494, 0.839733, 0, 0, 0)
+light_color = Color(1, 0.96, 0.89, 1)
+light_energy = 1.1
+shadow_enabled = false
+
+[node name="LuzRecorteDiario" type="DirectionalLight3D" parent="MenuPausa/PalcoDiario/DiarioViewportContainer/SubViewport/CenaDiario3D"]
+transform = Transform3D(-0.819152, -0.177041, 0.545587, 0, 0.951057, 0.309017, -0.573576, 0.253132, -0.77906, 0, 0, 0)
+light_color = Color(0.76, 0.84, 0.95, 1)
+light_energy = 0.32
+shadow_enabled = false
+
+[node name="CameraDiario" type="Camera3D" parent="MenuPausa/PalcoDiario/DiarioViewportContainer/SubViewport/CenaDiario3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4.15)
+current = true
+fov = 34.0
+near = 0.05
+
+[node name="PivotDiario" type="Node3D" parent="MenuPausa/PalcoDiario/DiarioViewportContainer/SubViewport/CenaDiario3D"]
+process_mode = 3
+
+[node name="DiarioModelo" parent="MenuPausa/PalcoDiario/DiarioViewportContainer/SubViewport/CenaDiario3D/PivotDiario" instance=ExtResource("3_diario_glb")]
+process_mode = 3
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
+
+[node name="CamadaPaginas" type="Control" parent="MenuPausa/PalcoDiario"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.290196, 0.419608, 0.32549, 1)
-theme_override_font_sizes/font_size = 12
+mouse_filter = 2
+
+[node name="PaginaEsquerda" type="MarginContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas"]
+layout_mode = 1
+anchor_left = 0.135
+anchor_top = 0.125
+anchor_right = 0.47
+anchor_bottom = 0.875
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="VBoxEsquerda" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaEsquerda"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+
+[node name="TagPausa" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaEsquerda/VBoxEsquerda"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.129412, 0.286275, 0.168627, 1)
+theme_override_font_sizes/font_size = 11
 text = "[ SISTEMA INTERROMPIDO ]"
 
-[node name="TituloPausa" type="Label" parent="MenuPausa/PainelPausa/VBoxPausa"]
+[node name="TituloPausa" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaEsquerda/VBoxEsquerda"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
-theme_override_font_sizes/font_size = 36
+theme_override_colors/font_color = Color(0.109804, 0.0941176, 0.0784314, 1)
+theme_override_font_sizes/font_size = 30
 text = "PAUSA"
 
-[node name="HSeparator" type="HSeparator" parent="MenuPausa/PainelPausa/VBoxPausa"]
+[node name="SepEsquerda1" type="HSeparator" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaEsquerda/VBoxEsquerda"]
 layout_mode = 2
 
-[node name="BotoesPausa" type="VBoxContainer" parent="MenuPausa/PainelPausa/VBoxPausa"]
+[node name="LabelResumoDiario" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaEsquerda/VBoxEsquerda"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_colors/font_color = Color(0.294118, 0.25098, 0.203922, 1)
+theme_override_font_sizes/font_size = 13
+text = "DIA 1  •  DIURNO\nDEBUG MODE  |  TAREFAS: 0 / 3"
+autowrap_mode = 3
 
-[node name="BotaoContinuar" type="Button" parent="MenuPausa/PainelPausa/VBoxPausa/BotoesPausa"]
-custom_minimum_size = Vector2(280, 42)
+[node name="SepEsquerda2" type="HSeparator" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaEsquerda/VBoxEsquerda"]
+layout_mode = 2
+
+[node name="TituloControles" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaEsquerda/VBoxEsquerda"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.545098, 0.0784314, 0.0784314, 1)
+theme_override_font_sizes/font_size = 13
+text = "CONTROLES"
+
+[node name="LabelControles" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaEsquerda/VBoxEsquerda"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.109804, 0.0941176, 0.0784314, 1)
+theme_override_constants/line_spacing = 3
+theme_override_font_sizes/font_size = 12
+text = "[WASD] Mover    [Shift] Correr
+[E] Interagir / Esconder
+[F] Lanterna    [Q] Olhar atrás
+[X] Caderno de Tarefas
+[1-6] Hotbar    [Esc] Pausar"
+autowrap_mode = 3
+
+[node name="PaginaDireita" type="MarginContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas"]
+layout_mode = 1
+anchor_left = 0.53
+anchor_top = 0.125
+anchor_right = 0.865
+anchor_bottom = 0.875
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="PainelPausa" type="PanelContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita"]
+layout_mode = 2
+
+[node name="VBoxPausa" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelPausa"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TagOpcoes" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelPausa/VBoxPausa"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.545098, 0.0784314, 0.0784314, 1)
+theme_override_font_sizes/font_size = 12
+text = "AÇÕES"
+
+[node name="HSeparator" type="HSeparator" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelPausa/VBoxPausa"]
+layout_mode = 2
+
+[node name="BotoesPausa" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelPausa/VBoxPausa"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="BotaoContinuar" type="Button" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelPausa/VBoxPausa/BotoesPausa"]
+custom_minimum_size = Vector2(220, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "CONTINUAR"
 alignment = 0
 
-[node name="BotaoConfiguracoes" type="Button" parent="MenuPausa/PainelPausa/VBoxPausa/BotoesPausa"]
-custom_minimum_size = Vector2(280, 42)
+[node name="BotaoConfiguracoes" type="Button" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelPausa/VBoxPausa/BotoesPausa"]
+custom_minimum_size = Vector2(220, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "CONFIGURAÇÕES"
 alignment = 0
 
-[node name="BotaoMenuPrincipal" type="Button" parent="MenuPausa/PainelPausa/VBoxPausa/BotoesPausa"]
-custom_minimum_size = Vector2(280, 42)
+[node name="BotaoMenuPrincipal" type="Button" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelPausa/VBoxPausa/BotoesPausa"]
+custom_minimum_size = Vector2(220, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "MENU PRINCIPAL"
 alignment = 0
 
-[node name="PainelConfiguracoes" type="PanelContainer" parent="MenuPausa"]
+[node name="PainelConfiguracoes" type="PanelContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita"]
 visible = false
-custom_minimum_size = Vector2(480, 0)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -240.0
-offset_top = -180.0
-offset_right = 240.0
-offset_bottom = 180.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBoxConfig" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes"]
-layout_mode = 2
-theme_override_constants/separation = 12
-alignment = 1
-
-[node name="HeaderConfig" type="HBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
 layout_mode = 2
 
-[node name="TituloConfig" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/HeaderConfig"]
+[node name="ScrollConfig" type="ScrollContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="VBoxConfig" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
-theme_override_font_sizes/font_size = 26
+theme_override_constants/separation = 5
+
+[node name="HeaderConfig" type="HBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig"]
+layout_mode = 2
+
+[node name="TituloConfig" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/HeaderConfig"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.109804, 0.0941176, 0.0784314, 1)
+theme_override_font_sizes/font_size = 17
 text = "CONFIGURAÇÕES"
 
-[node name="TagConfig" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/HeaderConfig"]
+[node name="TagConfig" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/HeaderConfig"]
 layout_mode = 2
 size_flags_vertical = 8
-theme_override_colors/font_color = Color(0.290196, 0.419608, 0.32549, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.129412, 0.286275, 0.168627, 1)
+theme_override_font_sizes/font_size = 11
 text = "[ OPÇÕES ]"
 
-[node name="HSeparator" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+[node name="HSeparator" type="HSeparator" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig"]
 layout_mode = 2
 
-[node name="SecaoAudio" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+[node name="SecaoAudio" type="GridContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 6
+columns = 2
 
-[node name="LabelAudio" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoAudio"]
+[node name="BoxMaster" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
-theme_override_font_sizes/font_size = 14
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="LabelAudio" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio/BoxMaster"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.109804, 0.0941176, 0.0784314, 1)
+theme_override_font_sizes/font_size = 11
 text = "VOLUME GERAL: 100%"
 
-[node name="SliderAudio" type="HSlider" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoAudio"]
+[node name="SliderAudio" type="HSlider" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio/BoxMaster"]
 layout_mode = 2
 step = 1.0
 value = 100.0
 
-[node name="HSeparatorAudio" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+[node name="BoxMusica" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="LabelMusica" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio/BoxMusica"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.294118, 0.25098, 0.203922, 1)
+theme_override_font_sizes/font_size = 11
+text = "MÚSICA: 100%"
+
+[node name="SliderMusica" type="HSlider" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio/BoxMusica"]
+layout_mode = 2
+step = 1.0
+value = 100.0
+
+[node name="BoxAmbiente" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="LabelAmbiente" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio/BoxAmbiente"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.294118, 0.25098, 0.203922, 1)
+theme_override_font_sizes/font_size = 11
+text = "AMBIENTE: 100%"
+
+[node name="SliderAmbiente" type="HSlider" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio/BoxAmbiente"]
+layout_mode = 2
+step = 1.0
+value = 100.0
+
+[node name="BoxSFX" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="LabelSFX" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio/BoxSFX"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.294118, 0.25098, 0.203922, 1)
+theme_override_font_sizes/font_size = 11
+text = "EFEITOS (SFX): 100%"
+
+[node name="SliderSFX" type="HSlider" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoAudio/BoxSFX"]
+layout_mode = 2
+step = 1.0
+value = 100.0
+
+[node name="HSeparatorAudio" type="HSeparator" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig"]
 layout_mode = 2
 
-[node name="SecaoTela" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+[node name="SecaoTela" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 2
 
-[node name="SecaoTelaTitulo" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoTela"]
+[node name="SecaoTelaTitulo" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoTela"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.721569, 0.52549, 0.231373, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.545098, 0.0784314, 0.0784314, 1)
+theme_override_font_sizes/font_size = 11
 text = "EXIBIÇÃO E VÍDEO"
 
-[node name="CheckTelaCheia" type="CheckBox" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoTela"]
+[node name="CheckTelaCheia" type="CheckBox" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoTela"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "TELA CHEIA"
+alignment = 0
 
-[node name="CheckVSync" type="CheckBox" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoTela"]
+[node name="CheckVSync" type="CheckBox" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoTela"]
 layout_mode = 2
-text = "SINCRONIZAÇÃO VERTICAL (V-SYNC)"
+theme_override_font_sizes/font_size = 12
+text = "V-SYNC"
+alignment = 0
 
-[node name="HSeparatorTela" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+[node name="HSeparatorTela" type="HSeparator" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig"]
 layout_mode = 2
 
-[node name="SecaoBrilho" type="VBoxContainer" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+[node name="SecaoBrilho" type="GridContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 4
+columns = 2
 
-[node name="LabelBrilho" type="Label" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoBrilho"]
+[node name="BoxBrilho" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoBrilho"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.784314, 0.776471, 0.756863, 1)
-theme_override_font_sizes/font_size = 14
-text = "BRILHO / EXPOSIÇÃO: 1.00"
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
 
-[node name="SliderBrilho" type="HSlider" parent="MenuPausa/PainelConfiguracoes/VBoxConfig/SecaoBrilho"]
+[node name="LabelBrilho" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoBrilho/BoxBrilho"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.109804, 0.0941176, 0.0784314, 1)
+theme_override_font_sizes/font_size = 11
+text = "BRILHO: 1.00"
+
+[node name="SliderBrilho" type="HSlider" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoBrilho/BoxBrilho"]
 layout_mode = 2
 min_value = 0.5
 max_value = 1.5
 step = 0.05
 value = 1.0
 
-[node name="HSeparator2" type="HSeparator" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
+[node name="BoxSens" type="VBoxContainer" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoBrilho"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="LabelSensibilidade" type="Label" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoBrilho/BoxSens"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.109804, 0.0941176, 0.0784314, 1)
+theme_override_font_sizes/font_size = 11
+text = "MOUSE: 1.00x"
+
+[node name="SliderSensibilidade" type="HSlider" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig/SecaoBrilho/BoxSens"]
+layout_mode = 2
+min_value = 0.0005
+max_value = 0.006
+step = 0.0001
+value = 0.002
+
+[node name="HSeparator2" type="HSeparator" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig"]
 layout_mode = 2
 
-[node name="BotaoVoltarPausa" type="Button" parent="MenuPausa/PainelConfiguracoes/VBoxConfig"]
-custom_minimum_size = Vector2(220, 40)
+[node name="BotaoVoltarPausa" type="Button" parent="MenuPausa/PalcoDiario/CamadaPaginas/PaginaDireita/PainelConfiguracoes/ScrollConfig/VBoxConfig"]
+custom_minimum_size = Vector2(180, 32)
 layout_mode = 2
 size_flags_horizontal = 0
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 text = "VOLTAR"
 alignment = 0
 

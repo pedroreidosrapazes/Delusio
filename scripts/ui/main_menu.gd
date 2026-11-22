@@ -24,6 +24,7 @@ extends Control
 @onready var botao_configuracoes: Button = $MenuPrincipal/ColunaEsquerda/BotoesContainer/BotaoConfiguracoes
 @onready var botao_sair: Button = $MenuPrincipal/ColunaEsquerda/BotoesContainer/BotaoSair
 @onready var label_descricao_modo: Label = get_node_or_null("MenuPrincipal/ColunaEsquerda/LabelDescricaoModo") as Label
+@onready var label_recorde_endless: Label = get_node_or_null("MenuPrincipal/ColunaEsquerda/LabelRecordeEndless") as Label
 
 @onready var audio_slider: HSlider = $MenuConfiguracoes/PainelFundo/VBoxContainer/PainelConfig/SecaoAudio/AudioSlider
 @onready var audio_label: Label = $MenuConfiguracoes/PainelFundo/VBoxContainer/PainelConfig/SecaoAudio/AudioLabel
@@ -34,15 +35,18 @@ extends Control
 @onready var botao_voltar: Button = $MenuConfiguracoes/PainelFundo/VBoxContainer/BotaoVoltar
 
 @onready var brilho_overlay: ColorRect = $BrilhoOverlay
+@onready var musica_menu: AudioStreamPlayer = get_node_or_null("MusicaMenu") as AudioStreamPlayer
 @onready var camera_titulo: Camera3D = get_node_or_null("Cenario3DContainer/SubViewport/CenaTitulo3D/CameraTitulo") as Camera3D
 @onready var luz_lampada: Light3D = get_node_or_null("Cenario3DContainer/SubViewport/CenaTitulo3D/LuzLampada") as Light3D
 @onready var world_env_titulo: WorldEnvironment = get_node_or_null("Cenario3DContainer/SubViewport/CenaTitulo3D/WorldEnvironment") as WorldEnvironment
 
+var caminho_config: String = ConfiguracoesUsuario.CAMINHO_PADRAO
 var _master_bus_idx: int = 0
 var _tempo_menu: float = 0.0
 var _pos_base_camera: Vector3 = Vector3.ZERO
 var _rot_base_camera: Vector3 = Vector3.ZERO
 var _fator_oscilacao_luz: float = 1.0
+var _carregando_ui: bool = false
 
 
 func _ready() -> void:
@@ -64,7 +68,35 @@ func _ready() -> void:
 
 	_conectar_sinais()
 	_inicializar_valores_ui()
+	atualizar_recorde_endless()
 	_mostrar_menu_principal(false)
+	if musica_menu != null and not musica_menu.finished.is_connected(_ao_terminar_musica_menu):
+		musica_menu.finished.connect(_ao_terminar_musica_menu)
+
+
+func _exit_tree() -> void:
+	if musica_menu != null:
+		musica_menu.stop()
+	BancoAudioDelusio.limpar_cache()
+
+
+func _ao_terminar_musica_menu() -> void:
+	if musica_menu != null and is_inside_tree() and DisplayServer.get_name() != "headless":
+		musica_menu.play()
+
+
+func atualizar_recorde_endless(caminho_save: String = RegistroEndless.CAMINHO_PADRAO) -> void:
+	if label_recorde_endless == null:
+		return
+	# Linha de melhor marca ocultada por decisão do projeto (Debug Mode).
+	label_recorde_endless.visible = false
+	var reg: Dictionary = RegistroEndless.carregar(caminho_save)
+	var rec_dias: int = int(reg.get("recorde_dias", 0))
+	var rec_tarefas: int = int(reg.get("recorde_tarefas", 0))
+	if rec_dias > 0 or rec_tarefas > 0:
+		label_recorde_endless.text = "DEBUG MODE: %d NOITE(S)  |  %d TAREFA(S)" % [rec_dias, rec_tarefas]
+	else:
+		label_recorde_endless.text = "DEBUG MODE: NENHUMA NOITE SOBREVIVIDA AINDA"
 
 
 func _process(delta: float) -> void:
@@ -104,12 +136,12 @@ func _conectar_sinais() -> void:
 	var descricoes: Array[Dictionary] = [
 		{
 			"botao": botao_modo_endless,
-			"texto": "Modo Endless: sobreviva dia após dia na fazenda para testar e dominar todas as mecânicas.",
+			"texto": "Debug Mode: modo temporário de validação contínua das mecânicas do jogo.",
 			"cor": TemaSurvivalHorror.COR_TEXTO_NORMAL
 		},
 		{
 			"botao": botao_modo_historia,
-			"texto": "Modo História (em desenvolvimento): será construído depois usando a base do Modo Endless.",
+			"texto": "Modo História (em desenvolvimento): será construído depois sobre a base validada no Debug Mode.",
 			"cor": TemaSurvivalHorror.COR_STATUS_AMBAR
 		},
 		{
@@ -140,15 +172,19 @@ func _conectar_sinais() -> void:
 
 
 func _inicializar_valores_ui() -> void:
-	# Áudio Master
-	var volume_db: float = AudioServer.get_bus_volume_db(_master_bus_idx)
-	var volume_linear: float = 0.0 if AudioServer.is_bus_mute(_master_bus_idx) else db_to_linear(volume_db)
-	audio_slider.set_value_no_signal(clampf(volume_linear, 0.0, 1.0))
-	_atualizar_label_audio(audio_slider.value)
+	_carregando_ui = true
+	var dados: Dictionary = ConfiguracoesUsuario.carregar(caminho_config)
+	ConfiguracoesUsuario.aplicar_todas(dados, get_tree(), DisplayServer.get_name() != "headless", world_env_titulo)
+
+	# Áudio Master (slider em escala 0..1 convertido para 0..100%)
+	var volume_pct: float = float(dados.get("volume_master", 100.0))
+	var volume_linear: float = clampf(volume_pct / 100.0, 0.0, 1.0)
+	audio_slider.set_value_no_signal(volume_linear)
+	_atualizar_label_audio(volume_linear)
 
 	# Tela Cheia
 	var modo_atual: DisplayServer.WindowMode = DisplayServer.window_get_mode()
-	var esta_tela_cheia: bool = (
+	var esta_tela_cheia: bool = bool(dados.get("tela_cheia", false)) if DisplayServer.get_name() == "headless" else (
 		modo_atual == DisplayServer.WINDOW_MODE_FULLSCREEN or
 		modo_atual == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
 	)
@@ -156,14 +192,26 @@ func _inicializar_valores_ui() -> void:
 	TemaSurvivalHorror.atualizar_visual_checkbox(tela_cheia_check_box)
 
 	# V-Sync
-	var vsync_atual: DisplayServer.VSyncMode = DisplayServer.window_get_vsync_mode()
-	vsync_check_box.set_pressed_no_signal(vsync_atual == DisplayServer.VSYNC_ENABLED)
+	var vsync_ativo: bool = bool(dados.get("vsync", true)) if DisplayServer.get_name() == "headless" else (
+		DisplayServer.window_get_vsync_mode() == DisplayServer.VSYNC_ENABLED
+	)
+	vsync_check_box.set_pressed_no_signal(vsync_ativo)
 	TemaSurvivalHorror.atualizar_visual_checkbox(vsync_check_box)
 
 	# Brilho / Exposição
-	brilho_slider.set_value_no_signal(1.0)
-	_atualizar_label_brilho(1.0)
-	_aplicar_brilho(1.0)
+	var v_brilho: float = float(dados.get("brilho", 1.0))
+	brilho_slider.set_value_no_signal(v_brilho)
+	_atualizar_label_brilho(v_brilho)
+	_aplicar_brilho(v_brilho)
+	_carregando_ui = false
+
+
+func _salvar_parcial_config(chave: String, valor: Variant) -> void:
+	if _carregando_ui:
+		return
+	var dados: Dictionary = ConfiguracoesUsuario.carregar(caminho_config)
+	dados[chave] = valor
+	ConfiguracoesUsuario.salvar(dados, caminho_config)
 
 
 # ==============================================================================
@@ -207,13 +255,13 @@ func _carregar_cena_modo(caminho_preferido: String, contexto_erro: String) -> bo
 
 func iniciar_modo_endless() -> bool:
 	GameManager.definir_modo_jogo(GameManager.ModoJogo.ENDLESS)
-	return _carregar_cena_modo(cena_jogo, "Modo Endless")
+	return _carregar_cena_modo(cena_jogo, "Debug Mode")
 
 
 func iniciar_modo_historia() -> bool:
 	if not modo_historia_disponivel:
 		_atualizar_descricao_modo(
-			"Modo História ainda em desenvolvimento — jogue o Modo Endless para validar as mecânicas.",
+			"Modo História ainda em desenvolvimento — use o Debug Mode para validar as mecânicas.",
 			TemaSurvivalHorror.COR_STATUS_AMBAR
 		)
 		return false
@@ -243,13 +291,10 @@ func _on_botao_sair_pressed() -> void:
 # ==============================================================================
 
 func _on_audio_slider_value_changed(value: float) -> void:
-	if value <= 0.001:
-		AudioServer.set_bus_mute(_master_bus_idx, true)
-	else:
-		AudioServer.set_bus_mute(_master_bus_idx, false)
-		AudioServer.set_bus_volume_db(_master_bus_idx, linear_to_db(value))
-
+	var pct: float = clampf(value * 100.0, 0.0, 100.0)
+	ConfiguracoesUsuario.aplicar_audio_bus(&"Master", pct)
 	_atualizar_label_audio(value)
+	_salvar_parcial_config("volume_master", pct)
 
 
 func _atualizar_label_audio(valor_linear: float) -> void:
@@ -258,20 +303,25 @@ func _atualizar_label_audio(valor_linear: float) -> void:
 
 
 func _on_tela_cheia_toggled(toggled_on: bool) -> void:
-	if toggled_on:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
-	else:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	if DisplayServer.get_name() != "headless":
+		if toggled_on:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
+		else:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	_salvar_parcial_config("tela_cheia", toggled_on)
 
 
 func _on_vsync_toggled(toggled_on: bool) -> void:
-	var modo: DisplayServer.VSyncMode = DisplayServer.VSYNC_ENABLED if toggled_on else DisplayServer.VSYNC_DISABLED
-	DisplayServer.window_set_vsync_mode(modo)
+	if DisplayServer.get_name() != "headless":
+		var modo: DisplayServer.VSyncMode = DisplayServer.VSYNC_ENABLED if toggled_on else DisplayServer.VSYNC_DISABLED
+		DisplayServer.window_set_vsync_mode(modo)
+	_salvar_parcial_config("vsync", toggled_on)
 
 
 func _on_brilho_slider_value_changed(value: float) -> void:
 	_atualizar_label_brilho(value)
 	_aplicar_brilho(value)
+	_salvar_parcial_config("brilho", value)
 
 
 func _atualizar_label_brilho(valor: float) -> void:
@@ -279,10 +329,7 @@ func _atualizar_label_brilho(valor: float) -> void:
 
 
 func _aplicar_brilho(valor: float) -> void:
-	RenderingServer.global_shader_parameter_set("ajuste_brilho", valor)
-
-	if world_env_titulo != null and world_env_titulo.environment != null:
-		world_env_titulo.environment.tonemap_exposure = valor
+	ConfiguracoesUsuario.aplicar_brilho(valor, get_tree(), world_env_titulo)
 
 	if is_instance_valid(brilho_overlay):
 		if valor < 1.0:
