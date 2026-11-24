@@ -47,7 +47,6 @@ func _ready() -> void:
 	layer = 1
 
 	_criar_filtro_delusio()
-	_criar_menu_medicamentos()
 	_criar_painel_leitura()
 	if GameManager.instance:
 		GameManager.instance.tarefas_atualizadas.connect(_on_tarefas_atualizadas)
@@ -66,8 +65,6 @@ func _ready() -> void:
 			GameManager.instance.game_over_disparado.connect(_ao_game_over)
 		if _filtro_delusio:
 			_filtro_delusio.definir_estado_horario(GameManager.instance.horario_atual, true)
-		if DisplayServer.get_name() != "headless":
-			call_deferred("abrir_menu_medicamentos")
 
 	_criar_painel_sequencia()
 	_criar_painel_lista_tarefas()
@@ -76,7 +73,12 @@ func _ready() -> void:
 	_criar_indicadores_fase2()
 	_criar_banner_noite()
 	_criar_hotbar()
+	_criar_menu_medicamentos()
 	_criar_tela_game_over()
+
+	if _legenda_radio != null:
+		_legenda_radio.hotbar_alvo = _barra
+		_legenda_radio.atualizar_posicionamento_hotbar()
 
 	if player:
 		player.hotbar_alterada.connect(_sincronizar_hotbar)
@@ -183,6 +185,23 @@ func _criar_menu_medicamentos() -> void:
 	if GameManager.instance:
 		menu_medicamentos.gerenciador = GameManager.instance.gerenciador_medicamentos
 	add_child(menu_medicamentos)
+	if not menu_medicamentos.visibility_changed.is_connected(_ao_alterar_visibilidade_menu_medicamentos):
+		menu_medicamentos.visibility_changed.connect(_ao_alterar_visibilidade_menu_medicamentos)
+
+
+func _ao_alterar_visibilidade_menu_medicamentos() -> void:
+	if menu_medicamentos != null and menu_medicamentos.visible:
+		if _barra:
+			_barra.hide()
+		if _temporizador:
+			_temporizador.stop()
+		if _legenda_radio:
+			_legenda_radio.visible = false
+	else:
+		if _legenda_radio:
+			_legenda_radio.visible = true
+			_legenda_radio.atualizar_posicionamento_hotbar()
+	_atualizar_prompt_interacao()
 
 
 func abrir_menu_medicamentos(vidros: Dictionary = {}) -> void:
@@ -281,6 +300,7 @@ func _criar_tela_game_over() -> void:
 		return
 	_tela_game_over = TELA_GAME_OVER.new()
 	_tela_game_over.name = "TelaGameOver"
+	_tela_game_over.z_index = 100
 	add_child(_tela_game_over)
 
 
@@ -388,7 +408,7 @@ func _atualizar_prompt_interacao() -> void:
 		_label_prompt_interacao.visible = false
 		return
 
-	if (painel_leitura != null and painel_leitura.visible) or (player != null and (player.esta_em_interacao_sequencia() or (player.has_method("esta_olhando_janela") and player.esta_olhando_janela()))):
+	if (menu_medicamentos != null and menu_medicamentos.visible) or (painel_leitura != null and painel_leitura.visible) or (player != null and (player.esta_em_interacao_sequencia() or (player.has_method("esta_olhando_janela") and player.esta_olhando_janela()))):
 		_label_prompt_interacao.visible = false
 		return
 
@@ -532,18 +552,36 @@ func _sincronizar_hotbar() -> void:
 		else:
 			(_slots[indice]["icone"] as TextureRect).texture = null
 	_atualizar_destaque()
+	if menu_medicamentos != null and menu_medicamentos.visible:
+		if _barra:
+			_barra.hide()
+		if _temporizador:
+			_temporizador.stop()
+		return
 	if _barra:
 		_barra.show()
 	if _temporizador:
 		_temporizador.start()
+	if _legenda_radio:
+		_legenda_radio.atualizar_posicionamento_hotbar()
 
 
 func _ao_selecionar_slot(indice: int) -> void:
 	if indice < 0 or indice >= Player.HOTBAR_SLOTS:
 		return
 	_atualizar_destaque()
-	_barra.show()
-	_temporizador.start()
+	if menu_medicamentos != null and menu_medicamentos.visible:
+		if _barra:
+			_barra.hide()
+		if _temporizador:
+			_temporizador.stop()
+		return
+	if _barra:
+		_barra.show()
+	if _temporizador:
+		_temporizador.start()
+	if _legenda_radio:
+		_legenda_radio.atualizar_posicionamento_hotbar()
 
 
 func _atualizar_destaque() -> void:

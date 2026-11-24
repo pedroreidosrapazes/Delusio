@@ -26,6 +26,7 @@ func _executar() -> void:
 	await _teste_3_pressao_dinamica_spawn_despawn()
 	await _teste_4_oclusao_3d_busca_frustrada_e_ataque_garras()
 	_teste_5_documento_rondante()
+	await _teste_6_colisao_paredes_deslizamento_e_anti_atravessamento()
 
 	if _falhas.is_empty():
 		print("\nOK: Todos os testes avançados do Rondante passaram com sucesso!")
@@ -317,3 +318,171 @@ func _teste_5_documento_rondante() -> void:
 		if inst != null:
 			inst.free()
 	print("OK: Documento diegético do Rondante validado.")
+
+
+func _criar_parede_teste(pai: Node3D, pos: Vector3, tamanho: Vector3) -> StaticBody3D:
+	var parede := StaticBody3D.new()
+	var col := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = tamanho
+	col.shape = box
+	parede.add_child(col)
+	pai.add_child(parede)
+	parede.global_position = pos
+	return parede
+
+
+func _teste_6_colisao_paredes_deslizamento_e_anti_atravessamento() -> void:
+	print("\n--- [6] Teste de Colisão Física com Paredes, Deslizamento e Anti-Atravessamento ---")
+
+	# 1. Bloqueio físico direto contra parede sólida (14m x 4m x 0.25m em z = -4.0)
+	var ctx1 := _criar_mapa_sintetico()
+	var mapa1 := ctx1["mapa"] as Node3D
+	var player1 := ctx1["player"] as Player
+	player1.global_position = Vector3(-40.0, 0.0, -40.0)
+	var parede_larga := _criar_parede_teste(mapa1, Vector3(0.0, 2.0, -4.0), Vector3(14.0, 4.0, 0.25))
+
+	var rondante := (load("res://scenes/monsters/rondante_fazenda.tscn") as PackedScene).instantiate() as RondanteFazenda
+	mapa1.add_child(rondante)
+	await physics_frame
+
+	rondante.ativar()
+	rondante.global_position = Vector3(0.0, 0.0, 0.0)
+	rondante.usar_desvio_obstaculo_raycast = false
+	for _i in range(24):
+		rondante._mover_para(Vector3(0.0, 0.0, -10.0), 5.2, 0.25)
+	_verificar(rondante.global_position.z > -3.6, "Sem desvio, colisão física deve impedir Rondante de atravessar parede larga (z atual: %.3f)." % rondante.global_position.z)
+
+	# Também em INVESTIGANDO e CACADA com delta alto (0.25s)
+	rondante.global_position = Vector3(0.0, 0.0, 0.0)
+	rondante.usar_desvio_obstaculo_raycast = true
+	rondante.ultima_posicao_som = Vector3(0.0, 0.0, -10.0)
+	rondante.tempo_investigacao_restante = 4.0
+	rondante.mudar_estado(RondanteFazenda.Estado.INVESTIGANDO)
+	for _i in range(4):
+		rondante.processar_ia(0.25)
+	_verificar(rondante.global_position.z > -3.6, "Em INVESTIGANDO com delta alto, Rondante não pode tunelar pela parede (z atual: %.3f)." % rondante.global_position.z)
+
+	rondante.global_position = Vector3(0.0, 0.0, 0.0)
+	rondante.ultima_posicao_vista_jogador = Vector3(0.0, 0.0, -10.0)
+	rondante.tempo_tolerancia_esconderijo_restante = 4.0
+	rondante.mudar_estado(RondanteFazenda.Estado.CACADA)
+	for _i in range(4):
+		rondante.processar_ia(0.25)
+	_verificar(rondante.global_position.z > -3.6, "Em CACADA com delta alto, Rondante não pode tunelar pela parede (z atual: %.3f)." % rondante.global_position.z)
+	parede_larga.queue_free()
+	mapa1.queue_free()
+	await process_frame
+
+	# 2. Contorno e deslizamento em parede finita (largura 3.6m em z = -4.0)
+	var ctx2 := _criar_mapa_sintetico()
+	var mapa2 := ctx2["mapa"] as Node3D
+	var player2 := ctx2["player"] as Player
+	player2.global_position = Vector3(-50.0, 0.0, -50.0)
+	_criar_parede_teste(mapa2, Vector3(0.0, 2.0, -4.0), Vector3(3.6, 4.0, 0.25))
+
+	var wp_alvo := PontoRonda.new()
+	wp_alvo.tipo_ponto = PontoRonda.TipoPonto.PATRULHA
+	mapa2.add_child(wp_alvo)
+	wp_alvo.global_position = Vector3(0.0, 0.0, -10.0)
+
+	var rondante2 := (load("res://scenes/monsters/rondante_fazenda.tscn") as PackedScene).instantiate() as RondanteFazenda
+	mapa2.add_child(rondante2)
+	await physics_frame
+
+	rondante2.ativar()
+	rondante2.usar_desvio_obstaculo_raycast = true
+	rondante2.global_position = Vector3(0.0, 0.0, 0.0)
+	var penetrou_parede_finita := false
+	for _i in range(180):
+		rondante2.processar_ia(0.05)
+		if absf(rondante2.global_position.x) < 1.75 and absf(rondante2.global_position.z - (-4.0)) < 0.30:
+			penetrou_parede_finita = true
+			break
+		if rondante2.global_position.z < -6.0:
+			break
+	_verificar(not penetrou_parede_finita, "Rondante não deve penetrar a parede finita durante o contorno.")
+	_verificar(rondante2.global_position.z < -6.0, "Rondante deve contornar parede finita de 3.6m e seguir até z < -6.0 (z atual: %.3f)." % rondante2.global_position.z)
+	mapa2.queue_free()
+	await process_frame
+
+	# 3. Impossibilidade de ver ou capturar através de parede fina (0.2m em z = -2.0)
+	var ctx3 := _criar_mapa_sintetico()
+	var mapa3 := ctx3["mapa"] as Node3D
+	var player3 := ctx3["player"] as Player
+	_criar_parede_teste(mapa3, Vector3(0.0, 2.0, -2.0), Vector3(8.0, 4.0, 0.2))
+
+	var rondante3 := (load("res://scenes/monsters/rondante_fazenda.tscn") as PackedScene).instantiate() as RondanteFazenda
+	mapa3.add_child(rondante3)
+	await physics_frame
+
+	rondante3.ativar()
+	rondante3.global_position = Vector3(0.0, 0.0, -1.35)
+	rondante3.look_at(Vector3(0.0, 0.0, -5.0), Vector3.UP)
+	player3.global_position = Vector3(0.0, 0.0, -2.30)
+
+	_verificar(not rondante3.pode_ver_jogador(player3), "Parede fina (0.2m) deve bloquear visão mesmo com jogador encostado do outro lado.")
+	_verificar(not rondante3._esta_no_alcance_captura(player3), "Parede fina deve impedir alcance de captura através da parede.")
+
+	var capturou_parede := {"ok": false}
+	rondante3.jogador_capturado.connect(func(_m, _p): capturou_parede["ok"] = true)
+	rondante3._iniciar_ataque_garras(player3)
+	rondante3.processar_ia(rondante3.duracao_ataque_garras + 0.1)
+	_verificar(not capturou_parede["ok"], "Concluir ATAQUE_GARRAS através de parede fechada NÃO deve capturar o jogador.")
+	mapa3.queue_free()
+	await process_frame
+
+	# 4. Recuo de ATORDOADO_LUZ bloqueado por parede traseira
+	var ctx4 := _criar_mapa_sintetico()
+	var mapa4 := ctx4["mapa"] as Node3D
+	var player4 := ctx4["player"] as Player
+	_criar_parede_teste(mapa4, Vector3(0.0, 2.0, 1.0), Vector3(8.0, 4.0, 0.25))
+
+	var rondante4 := (load("res://scenes/monsters/rondante_fazenda.tscn") as PackedScene).instantiate() as RondanteFazenda
+	mapa4.add_child(rondante4)
+	await physics_frame
+
+	rondante4.ativar()
+	rondante4.global_position = Vector3(0.0, 0.0, 0.35)
+	player4.global_position = Vector3(0.0, 0.0, -4.0)
+	player4.camera.look_at(rondante4.global_position + Vector3(0.0, 1.5, 0.0), Vector3.UP)
+	player4._luz_lanterna_acesa = true
+	player4._atualizar_aparencia_lanterna()
+	rondante4.cooldown_atordoamento_restante = 0.0
+	rondante4.receber_foco_lanterna(rondante4.tempo_foco_para_atordoar + 0.1)
+	_verificar(rondante4.estado_atual == RondanteFazenda.Estado.ATORDOADO_LUZ, "Rondante deve entrar em ATORDOADO_LUZ no teste de recuo contra parede.")
+	var passos_stun := int(ceilf(rondante4.duracao_atordoamento_luz / 0.1))
+	for _i in range(passos_stun):
+		rondante4.processar_ia(0.1)
+	_verificar(rondante4.global_position.z < 0.75, "Recuo em ATORDOADO_LUZ deve ser barrado pela parede traseira em z = 1.0 (z atual: %.3f)." % rondante4.global_position.z)
+	mapa4.queue_free()
+	await process_frame
+
+	# 5. Anti-softlock em som emitido atrás de sala totalmente fechada
+	var ctx5 := _criar_mapa_sintetico()
+	var mapa5 := ctx5["mapa"] as Node3D
+	var player5 := ctx5["player"] as Player
+	player5.global_position = Vector3(-45.0, 0.0, -45.0)
+	_criar_parede_teste(mapa5, Vector3(0.0, 2.0, -6.0), Vector3(8.5, 4.0, 0.3))
+	_criar_parede_teste(mapa5, Vector3(0.0, 2.0, -14.0), Vector3(8.5, 4.0, 0.3))
+	_criar_parede_teste(mapa5, Vector3(-4.0, 2.0, -10.0), Vector3(0.3, 4.0, 8.5))
+	_criar_parede_teste(mapa5, Vector3(4.0, 2.0, -10.0), Vector3(0.3, 4.0, 8.5))
+
+	var rondante5 := (load("res://scenes/monsters/rondante_fazenda.tscn") as PackedScene).instantiate() as RondanteFazenda
+	mapa5.add_child(rondante5)
+	await physics_frame
+
+	rondante5.ativar()
+	rondante5.global_position = Vector3(0.0, 0.0, 0.0)
+	rondante5.receber_estimulo_sonoro(Vector3(0.0, 0.0, -10.0), 30.0)
+	_verificar(rondante5.estado_atual == RondanteFazenda.Estado.INVESTIGANDO, "Som dentro de sala fechada deve iniciar INVESTIGANDO.")
+	for _i in range(90):
+		rondante5.processar_ia(0.1)
+		if rondante5.estado_atual == RondanteFazenda.Estado.PATRULHA:
+			break
+	_verificar(rondante5.global_position.z > -5.7, "Rondante deve permanecer fora da sala fechada (z atual: %.3f)." % rondante5.global_position.z)
+	_verificar(rondante5.estado_atual == RondanteFazenda.Estado.PATRULHA, "Após ficar bloqueado tentando investigar sala fechada, deve retornar a PATRULHA sem softlock (estado: %d)." % rondante5.estado_atual)
+	mapa5.queue_free()
+	await process_frame
+
+	print("OK: Colisão física com paredes, contorno, visão/captura bloqueadas, recuo e anti-softlock validados.")

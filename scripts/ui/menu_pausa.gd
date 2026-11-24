@@ -54,6 +54,7 @@ var _carregando_ui: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_to_group("menu_pausa_ui")
 
 	TemaSurvivalHorror.aplicar_tema_papel(camada_paginas)
 	_preparar_diario_3d()
@@ -187,12 +188,13 @@ func _input(event: InputEvent) -> void:
 	if GameManager.instance != null and GameManager.instance.jogo_encerrado:
 		return
 	if event.is_action_pressed("ui_cancel") and not event.is_echo():
-		if not get_tree().paused:
-			for painel in get_tree().get_nodes_in_group("painel_leitura_documento"):
-				if painel is CanvasItem and (painel as CanvasItem).visible and painel.has_method("fechar"):
-					painel.fechar()
-					get_viewport().set_input_as_handled()
-					return
+		if not visible:
+			if not get_tree().paused:
+				for painel in get_tree().get_nodes_in_group("painel_leitura_documento"):
+					if painel is CanvasItem and (painel as CanvasItem).visible and painel.has_method("fechar"):
+						painel.fechar()
+						get_viewport().set_input_as_handled()
+						return
 			pausar_jogo()
 		else:
 			if painel_configuracoes.visible:
@@ -316,6 +318,16 @@ func _tem_menu_modal_cursor_ativo() -> bool:
 	return false
 
 
+func _deve_manter_jogo_pausado() -> bool:
+	var tree := get_tree()
+	if tree == null:
+		return false
+	for node in tree.get_nodes_in_group("modal_pausa_jogo"):
+		if node is CanvasItem and (node as CanvasItem).visible:
+			return true
+	return false
+
+
 func retomar_jogo(imediato: bool = false) -> void:
 	if not visible and not get_tree().paused:
 		return
@@ -355,8 +367,13 @@ func _concluir_retomada() -> void:
 	painel_configuracoes.visible = false
 	camada_paginas.modulate.a = 1.0
 	fundo_escuro.modulate.a = 1.0
-	if get_tree() != null:
-		get_tree().paused = false
+	var tree := get_tree()
+	if tree != null:
+		tree.paused = _deve_manter_jogo_pausado()
+		if tree.paused:
+			for node in tree.get_nodes_in_group("modal_pausa_jogo"):
+				if node is CanvasItem and (node as CanvasItem).visible and node.has_method("sincronizar_pausa_e_fisica"):
+					node.sincronizar_pausa_e_fisica()
 	if _tem_menu_modal_cursor_ativo():
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	else:

@@ -9,6 +9,7 @@ signal escolha_feita(opcao: int, resultado: Dictionary)
 
 const CENA_PLACA_PETRI := "res://assets/medicamentos_e_placa/PLACA DE PETRI.blend"
 const GRUPO_MODAL_CURSOR := "modal_cursor_ui"
+const GRUPO_MODAL_PAUSA := "modal_pausa_jogo"
 
 const DIAMETRO_PETRI_ALVO := 1.65
 const RAZAO_FUNDO_INTERNO_PETRI := 0.206 # 0.0824 / 0.40 medido na malha original do .blend
@@ -41,11 +42,18 @@ var _cursor_na_janela: bool = true
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	add_to_group(GRUPO_MODAL_CURSOR)
+	add_to_group(GRUPO_MODAL_PAUSA)
+	z_index = 50
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_construir_interface()
+
+
+func _exit_tree() -> void:
+	_restaurar_fisica_mundo()
 
 
 func _notification(what: int) -> void:
@@ -501,6 +509,44 @@ func _criar_pilula_3d(id: StringName, pos_mundo_vp: Vector3) -> RigidBody3D:
 	return rb
 
 
+func sincronizar_pausa_e_fisica() -> void:
+	var tree := get_tree()
+	if not visible or tree == null:
+		return
+	if not tree.paused:
+		tree.paused = true
+	PhysicsServer3D.set_active(true)
+	if tree.root != null and tree.root.find_world_3d() != null:
+		var main_space := tree.root.find_world_3d().space
+		if main_space.is_valid():
+			PhysicsServer3D.space_set_active(main_space, false)
+	var subviewports: Array[SubViewport] = [subviewport_esq, subviewport_dir]
+	for sv in subviewports:
+		if sv != null and sv.find_world_3d() != null:
+			var sv_space: RID = sv.find_world_3d().space
+			if sv_space.is_valid():
+				PhysicsServer3D.space_set_active(sv_space, true)
+
+
+func _restaurar_fisica_mundo() -> void:
+	var tree := get_tree()
+	if tree == null or tree.root == null:
+		return
+	var world_3d := tree.root.find_world_3d()
+	if world_3d != null and world_3d.space.is_valid():
+		PhysicsServer3D.space_set_active(world_3d.space, true)
+
+
+func _menu_pausa_aberto() -> bool:
+	var tree := get_tree()
+	if tree == null:
+		return false
+	for node in tree.get_nodes_in_group("menu_pausa_ui"):
+		if node is CanvasItem and (node as CanvasItem).visible and not node.is_queued_for_deletion():
+			return true
+	return false
+
+
 func abrir(vidros: Dictionary = {}) -> void:
 	if gerenciador == null:
 		var gerente := GameManager.instance
@@ -526,6 +572,7 @@ func abrir(vidros: Dictionary = {}) -> void:
 	_atualizar_textos()
 
 	visible = true
+	sincronizar_pausa_e_fisica()
 	if filtro_delusio != null:
 		filtro_delusio.definir_desfoque_fundo(1.0, false)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -539,7 +586,20 @@ func fechar() -> void:
 		subviewport_dir.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	if filtro_delusio != null:
 		filtro_delusio.definir_desfoque_fundo(0.0, false)
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	_restaurar_fisica_mundo()
+	var tree := get_tree()
+	if tree != null:
+		if not _menu_pausa_aberto():
+			tree.paused = false
+		elif tree.paused:
+			PhysicsServer3D.set_active(false)
+		var outro_modal_cursor := false
+		for node in tree.get_nodes_in_group(GRUPO_MODAL_CURSOR):
+			if node != self and node is CanvasItem and (node as CanvasItem).visible:
+				outro_modal_cursor = true
+				break
+		if not tree.paused and not outro_modal_cursor:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 
 func _popular_vidros() -> void:
@@ -643,13 +703,29 @@ func atualizar_inclinacao_mouse(pos_mouse_norm: Vector2, delta: float) -> void:
 
 
 func _process(delta: float) -> void:
-	if not visible:
+	if not visible or _menu_pausa_aberto():
 		return
+	var tree := get_tree()
+	if tree != null and tree.paused:
+		sincronizar_pausa_e_fisica()
 
 	var vp_rect := get_viewport_rect()
 	var m_pos := get_viewport().get_mouse_position()
 	var cursor_valido := _cursor_na_janela and vp_rect.size.x > 0.0 and vp_rect.size.y > 0.0 and vp_rect.has_point(m_pos)
 	atualizar_inclinacao_por_cursor_tela(m_pos, cursor_valido, delta)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible or _menu_pausa_aberto():
+		return
+	if GameManager.instance != null and GameManager.instance.jogo_encerrado:
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_P:
+		var pai := get_parent()
+		if pai != null and pai.has_method("_atalhos_debug_ativos") and pai._atalhos_debug_ativos():
+			fechar()
+			if get_viewport() != null:
+				get_viewport().set_input_as_handled()
 
 
 func escolher(opcao: int) -> Dictionary:

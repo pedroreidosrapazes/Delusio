@@ -20,6 +20,7 @@ var _material_filtro: ShaderMaterial
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 0
 	_criar_retangulo_tela()
 	definir_estado_horario(0, true)
@@ -112,11 +113,12 @@ func calcular_tensao_silhueta() -> float:
 
 
 func _process(delta: float) -> void:
-	_impulso_tensao = move_toward(_impulso_tensao, 0.0, delta * 0.28)
-	var tensao_silhueta := calcular_tensao_silhueta()
-	var tensao_alvo := clampf(_tensao_base_horario + _impulso_tensao + tensao_silhueta, 0.0, 1.0)
-	nivel_tensao_atual = move_toward(nivel_tensao_atual, tensao_alvo, delta * 1.5)
-	peso_noite_atual = move_toward(peso_noite_atual, _peso_noite_alvo, delta * 0.8)
+	if get_tree() == null or not get_tree().paused:
+		_impulso_tensao = move_toward(_impulso_tensao, 0.0, delta * 0.28)
+		var tensao_silhueta := calcular_tensao_silhueta()
+		var tensao_alvo := clampf(_tensao_base_horario + _impulso_tensao + tensao_silhueta, 0.0, 1.0)
+		nivel_tensao_atual = move_toward(nivel_tensao_atual, tensao_alvo, delta * 1.5)
+		peso_noite_atual = move_toward(peso_noite_atual, _peso_noite_alvo, delta * 0.8)
 	desfoque_fundo_atual = move_toward(desfoque_fundo_atual, _desfoque_fundo_alvo, delta * 3.5)
 	_atualizar_uniformes_shader()
 

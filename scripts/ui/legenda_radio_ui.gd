@@ -5,9 +5,14 @@ extends Control
 ## Posicionada na parte inferior central do HUD com ajuste automático ao texto,
 ## opacidade baseada em proximidade 3D e fade-out após o término do boletim.
 
+const MARGEM_INFERIOR_ACIMA_HOTBAR: int = 148
+const ESPACAMENTO_ACIMA_HOTBAR: int = 16
+
 @export var radio_alvo: Radio
 @export var atraso_ocultar_fim_s: float = 2.0
 @export var largura_maxima_px: float = 640.0
+
+var hotbar_alvo: Control = null
 
 var _margem_inferior: MarginContainer
 var _painel_legenda: PanelContainer
@@ -28,6 +33,7 @@ func _ready() -> void:
 	_garantir_hierarquia_ui()
 	_garantir_timer_ocultar()
 	_aplicar_visibilidade_imediata(0.0)
+	atualizar_posicionamento_hotbar()
 
 	call_deferred("_tentar_conectar_radio")
 
@@ -35,6 +41,21 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if _radio_conectado == null or not is_instance_valid(_radio_conectado):
 		_tentar_conectar_radio()
+	atualizar_posicionamento_hotbar()
+
+
+func atualizar_posicionamento_hotbar() -> void:
+	if _margem_inferior == null:
+		return
+	var margem_alvo: int = MARGEM_INFERIOR_ACIMA_HOTBAR
+	if hotbar_alvo != null and is_instance_valid(hotbar_alvo) and hotbar_alvo.visible and is_inside_tree():
+		var vp_altura := get_viewport_rect().size.y
+		var rect_hb := hotbar_alvo.get_global_rect()
+		if vp_altura > 0.0 and rect_hb.size.y > 0.0:
+			var topo_desde_base := int(ceilf(vp_altura - rect_hb.position.y)) + ESPACAMENTO_ACIMA_HOTBAR
+			margem_alvo = maxi(margem_alvo, topo_desde_base)
+	if not _margem_inferior.has_theme_constant_override("margin_bottom") or _margem_inferior.get_theme_constant("margin_bottom") != margem_alvo:
+		_margem_inferior.add_theme_constant_override("margin_bottom", margem_alvo)
 
 
 func _garantir_hierarquia_ui() -> void:
@@ -46,7 +67,7 @@ func _garantir_hierarquia_ui() -> void:
 		_margem_inferior.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_margem_inferior.add_theme_constant_override("margin_left", 48)
 		_margem_inferior.add_theme_constant_override("margin_right", 48)
-		_margem_inferior.add_theme_constant_override("margin_bottom", 96)
+		_margem_inferior.add_theme_constant_override("margin_bottom", MARGEM_INFERIOR_ACIMA_HOTBAR)
 		add_child(_margem_inferior)
 
 	_painel_legenda = _margem_inferior.get_node_or_null("PainelLegenda") as PanelContainer
@@ -149,6 +170,7 @@ func _ao_iniciar_transmissao(_dia: int) -> void:
 	if _tween_fade and _tween_fade.is_valid():
 		_tween_fade.kill()
 
+	atualizar_posicionamento_hotbar()
 	_alpha_estado = 1.0
 	_atualizar_opacidade_final()
 
@@ -157,6 +179,7 @@ func _ao_atualizar_legenda(texto_completo: String, caracteres_visiveis: int) -> 
 	if _texto_legenda == null:
 		return
 
+	atualizar_posicionamento_hotbar()
 	_ajustar_largura_caixa(texto_completo)
 	var bbcode := _formatar_bbcode(texto_completo)
 	if _texto_legenda.text != bbcode:

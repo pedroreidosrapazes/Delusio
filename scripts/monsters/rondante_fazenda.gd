@@ -37,6 +37,12 @@ signal ataque_garras_iniciado(alvo: Player)
 ]
 @export var usar_raycast_oclusao: bool = true
 @export var usar_desvio_obstaculo_raycast: bool = true
+@export var usar_colisao_paredes: bool = true
+@export_flags_3d_physics var mascara_colisao_ambiente: int = 1
+@export var raio_colisao_corpo: float = 0.38
+@export var altura_colisao_corpo: float = 1.40
+@export var offset_y_colisao_corpo: float = 1.08
+@export var altura_max_degrau: float = 0.45
 
 @export_category("Visual 3D e Áudio")
 @export var usar_modelo_3d_real: bool = true
@@ -88,6 +94,12 @@ var _timer_passos: float = 0.0
 var _destino_retirada: Vector3 = Vector3.ZERO
 var _direcao_espreita_atual: Vector3 = Vector3.FORWARD
 var _pontos_espreita_visitados: Dictionary = {}
+var _forma_colisao_corpo: CapsuleShape3D = null
+var _sentido_desvio_preferido: float = 1.0
+var _timer_memoria_desvio: float = 0.0
+var _tempo_bloqueado_movimento: float = 0.0
+var _tempo_sem_progresso_alvo: float = 0.0
+var _menor_dist_alvo_mov: float = INF
 
 
 func _ready() -> void:
@@ -245,6 +257,10 @@ func mudar_estado(novo_estado: Estado) -> void:
 		return
 	var anterior := estado_atual
 	estado_atual = novo_estado
+	_tempo_bloqueado_movimento = 0.0
+	_timer_memoria_desvio = 0.0
+	_tempo_sem_progresso_alvo = 0.0
+	_menor_dist_alvo_mov = INF
 	if novo_estado == Estado.PATRULHA or novo_estado == Estado.INATIVO or novo_estado == Estado.EM_ESPERA:
 		viu_jogador_entrar_esconderijo = false
 	if novo_estado == Estado.PATRULHA:
@@ -301,6 +317,10 @@ func ativar() -> void:
 	tempo_ataque_restante = 0.0
 	pressao_ruido_atual = 0.0
 	_prioridade_som_atual = 0.0
+	_tempo_bloqueado_movimento = 0.0
+	_timer_memoria_desvio = 0.0
+	_tempo_sem_progresso_alvo = 0.0
+	_menor_dist_alvo_mov = INF
 	viu_jogador_entrar_esconderijo = false
 	_pontos_espreita_visitados.clear()
 
@@ -324,6 +344,10 @@ func desativar() -> void:
 	tempo_ataque_restante = 0.0
 	pressao_ruido_atual = 0.0
 	_prioridade_som_atual = 0.0
+	_tempo_bloqueado_movimento = 0.0
+	_timer_memoria_desvio = 0.0
+	_tempo_sem_progresso_alvo = 0.0
+	_menor_dist_alvo_mov = INF
 	viu_jogador_entrar_esconderijo = false
 	mudar_estado(Estado.INATIVO)
 
@@ -348,8 +372,11 @@ func tentar_entrar_por_pressao(pos_interesse: Vector3 = Vector3.ZERO) -> bool:
 			return false
 
 	var ponto_spawn := _escolher_ponto_entrada_saida(true)
-	global_position = Vector3(ponto_spawn.x, global_position.y, ponto_spawn.z)
-	_ajustar_altura_chao()
+	global_position = ponto_spawn
+	_ajustar_altura_chao(true)
+	var space := _obter_espaco_3d()
+	if space != null:
+		global_position = _despenetrar_horizontalmente(global_position, space, _obter_excecoes_raycast(_obter_player()))
 	visible = true
 	pressao_ruido_atual = 0.0
 	tempo_ronda_restante = randf_range(cfg.duracao_ronda_min, cfg.duracao_ronda_max)
@@ -394,6 +421,8 @@ func _escolher_ponto_entrada_saida(exigir_fora_visao: bool) -> Vector3:
 			var dir_c := (cand - cam.global_position).normalized()
 			if cam_fwd.dot(dir_c) > 0.35:
 				score -= 60.0
+		if not _posicao_livre_colisao(cand):
+			score -= 250.0
 		if score > melhor_score:
 			melhor_score = score
 			melhor = cand
@@ -421,6 +450,8 @@ func receber_estimulo_sonoro(pos: Vector3, raio: float) -> void:
 	_prioridade_som_atual = raio
 	ultima_posicao_som = pos
 	tempo_investigacao_restante = duracao_investigacao
+	_tempo_sem_progresso_alvo = 0.0
+	_menor_dist_alvo_mov = INF
 
 	var player := _obter_player()
 	if player != null and player.esta_escondido():
@@ -501,19 +532,29 @@ func tem_linha_de_visao(player: Player) -> bool:
 		return true
 
 	var origem := global_position + Vector3(0.0, 1.8, 0.0)
-	var destino := player.global_position + Vector3(0.0, 1.3, 0.0)
-	if origem.distance_squared_to(destino) < 0.04:
-		return true
+	var excl := _obter_excecoes_raycast(player)
+	for offset_y in [1.3, 1.68]:
+		var destino := player.global_position + Vector3(0.0, offset_y, 0.0)
+		if origem.distance_squared_to(destino) < 0.04:
+			return true
 
-	var query := PhysicsRayQueryParameters3D.create(origem, destino)
-	query.exclude = _obter_excecoes_raycast(player)
-	query.hit_from_inside = false
-	var hit := space.intersect_ray(query)
-	if hit.is_empty():
-		return true
+		var query := PhysicsRayQueryParameters3D.create(origem, destino, mascara_colisao_ambiente, excl)
+		query.hit_from_inside = true
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			return true
 
-	var pos_hit: Vector3 = hit.get("position", origem)
-	return pos_hit.distance_to(destino) <= 0.65
+		var col_hit: Object = hit.get("collider")
+		if player.esconderijo_atual != null and is_instance_valid(player.esconderijo_atual):
+			if col_hit == player.esconderijo_atual or (col_hit is Node and player.esconderijo_atual.is_ancestor_of(col_hit as Node)):
+				return true
+
+		var normal_hit: Vector3 = hit.get("normal", Vector3.ZERO)
+		var pos_hit: Vector3 = hit.get("position", origem)
+		if normal_hit.y >= 0.70 and pos_hit.distance_to(destino) <= 0.65:
+			return true
+
+	return false
 
 
 func _obter_dificuldade_endless() -> Dictionary:
@@ -609,6 +650,10 @@ func processar_ia(delta: float) -> void:
 			_processar_audio_passos(delta, cadencia_passos_patrulha)
 			if _distancia_xz(global_position, alvo_patrulha) <= 1.1:
 				avancar_waypoint_patrulha()
+			elif _tempo_bloqueado_movimento >= 2.5 or _tempo_sem_progresso_alvo >= 4.5:
+				_tempo_bloqueado_movimento = 0.0
+				_tempo_sem_progresso_alvo = 0.0
+				avancar_waypoint_patrulha()
 
 		Estado.ESPREITA_QUINA:
 			if pode_ver_jogador(player):
@@ -629,6 +674,10 @@ func processar_ia(delta: float) -> void:
 			if _distancia_xz(global_position, ultima_posicao_som) > 1.2:
 				_mover_para(ultima_posicao_som, vel_investigar, delta)
 				_processar_audio_passos(delta, cadencia_passos_patrulha * 0.85)
+				if _tempo_bloqueado_movimento >= 1.0 or _tempo_sem_progresso_alvo >= 1.5:
+					tempo_investigacao_restante -= delta
+					if tempo_investigacao_restante <= 0.0:
+						mudar_estado(Estado.PATRULHA)
 			else:
 				tempo_investigacao_restante -= delta
 				if tempo_investigacao_restante <= 0.0:
@@ -666,7 +715,7 @@ func processar_ia(delta: float) -> void:
 		Estado.ATAQUE_GARRAS:
 			tempo_ataque_restante -= delta
 			if tempo_ataque_restante <= 0.0:
-				if player != null and not player.esta_escondido() and _distancia_xz(global_position, player.global_position) <= alcance_ataque_garras:
+				if player != null and not player.esta_escondido() and _distancia_xz(global_position, player.global_position) <= alcance_ataque_garras and tem_linha_de_visao(player):
 					realizar_captura(player)
 				else:
 					if player != null:
@@ -678,7 +727,8 @@ func processar_ia(delta: float) -> void:
 			if player != null:
 				var dir_recuo := Vector3(global_position.x - player.global_position.x, 0.0, global_position.z - player.global_position.z)
 				if dir_recuo.length_squared() > 0.001:
-					global_position += dir_recuo.normalized() * (cfg.velocidade_patrulha * 0.12) * delta
+					_mover_com_colisao(dir_recuo.normalized() * (cfg.velocidade_patrulha * 0.12) * delta)
+					_ajustar_altura_chao(false)
 
 			tempo_atordoado_restante -= delta
 			if tempo_atordoado_restante <= 0.0:
@@ -695,7 +745,7 @@ func processar_ia(delta: float) -> void:
 				return
 			_mover_para(_destino_retirada, cfg.velocidade_patrulha * 1.1 * mult_vel, delta)
 			_processar_audio_passos(delta, cadencia_passos_patrulha)
-			if _distancia_xz(global_position, _destino_retirada) <= 1.5:
+			if _distancia_xz(global_position, _destino_retirada) <= 1.5 or _tempo_bloqueado_movimento >= 3.5 or _tempo_sem_progresso_alvo >= 5.0:
 				visible = false
 				pressao_ruido_atual = 0.0
 				mudar_estado(Estado.EM_ESPERA)
@@ -795,23 +845,243 @@ func _processar_foco_lanterna_jogador(player: Player, delta: float) -> void:
 		tempo_foco_lanterna_acumulado = maxf(0.0, tempo_foco_lanterna_acumulado - delta * 0.5)
 
 
-func _ajustar_altura_chao() -> void:
+func _obter_forma_colisao_corpo() -> CapsuleShape3D:
+	if _forma_colisao_corpo == null:
+		_forma_colisao_corpo = CapsuleShape3D.new()
+	_forma_colisao_corpo.radius = maxf(0.15, raio_colisao_corpo)
+	_forma_colisao_corpo.height = maxf(_forma_colisao_corpo.radius * 2.0 + 0.1, altura_colisao_corpo)
+	return _forma_colisao_corpo
+
+
+func _posicao_livre_colisao(pos_base: Vector3) -> bool:
+	if not usar_colisao_paredes:
+		return true
+	var space := _obter_espaco_3d()
+	if space == null:
+		return true
+	var params := PhysicsShapeQueryParameters3D.new()
+	params.shape = _obter_forma_colisao_corpo()
+	params.transform = Transform3D(Basis.IDENTITY, pos_base + Vector3(0.0, offset_y_colisao_corpo, 0.0))
+	params.collision_mask = mascara_colisao_ambiente
+	params.collide_with_bodies = true
+	params.collide_with_areas = false
+	params.exclude = _obter_excecoes_raycast(_obter_player())
+	return space.intersect_shape(params, 1).is_empty()
+
+
+func _despenetrar_horizontalmente(pos_base: Vector3, space: PhysicsDirectSpaceState3D, excl: Array[RID]) -> Vector3:
+	if not usar_colisao_paredes or space == null:
+		return pos_base
+	var pos := pos_base
+	var forma := _obter_forma_colisao_corpo()
+	for _i in range(3):
+		var params := PhysicsShapeQueryParameters3D.new()
+		params.shape = forma
+		params.transform = Transform3D(Basis.IDENTITY, pos + Vector3(0.0, offset_y_colisao_corpo, 0.0))
+		params.motion = Vector3.ZERO
+		params.margin = 0.01
+		params.collision_mask = mascara_colisao_ambiente
+		params.collide_with_bodies = true
+		params.collide_with_areas = false
+		params.exclude = excl
+		var rest := space.get_rest_info(params)
+		if rest.is_empty():
+			break
+		var normal: Vector3 = rest.get("normal", Vector3.ZERO)
+		if absf(normal.y) >= 0.75:
+			break
+		var n_xz := Vector3(normal.x, 0.0, normal.z)
+		if n_xz.length_squared() < 0.0001:
+			break
+		n_xz = n_xz.normalized()
+		var pts := space.collide_shape(params, 8)
+		var profundidade := 0.0
+		for j in range(0, pts.size() - 1, 2):
+			var proj := (pts[j + 1] - pts[j]).dot(n_xz)
+			if proj > profundidade:
+				profundidade = proj
+		if profundidade <= 0.0:
+			profundidade = 0.02
+		profundidade = minf(profundidade, 0.25)
+		pos += n_xz * (profundidade + 0.005)
+	return pos
+
+
+func _obter_normal_parede_colisao(pos_base: Vector3, dir_mov: Vector3, dist_sobra: float, hit_ray: Dictionary, space: PhysicsDirectSpaceState3D, excl: Array[RID]) -> Vector3:
+	var params_rest := PhysicsShapeQueryParameters3D.new()
+	params_rest.shape = _obter_forma_colisao_corpo()
+	params_rest.transform = Transform3D(
+		Basis.IDENTITY,
+		pos_base + Vector3(0.0, offset_y_colisao_corpo, 0.0) + dir_mov * minf(0.06, dist_sobra + 0.03)
+	)
+	params_rest.motion = Vector3.ZERO
+	params_rest.margin = 0.04
+	params_rest.collision_mask = mascara_colisao_ambiente
+	params_rest.collide_with_bodies = true
+	params_rest.collide_with_areas = false
+	params_rest.exclude = excl
+	var rest := space.get_rest_info(params_rest)
+	if not rest.is_empty():
+		var n_rest: Vector3 = rest.get("normal", Vector3.ZERO)
+		if Vector3(n_rest.x, 0.0, n_rest.z).length_squared() >= 0.0001:
+			return n_rest
+
+	if not hit_ray.is_empty():
+		var n_ray: Vector3 = hit_ray.get("normal", Vector3.ZERO)
+		if Vector3(n_ray.x, 0.0, n_ray.z).length_squared() >= 0.0001:
+			return n_ray
+
+	var alcance_curto := maxf(0.15, raio_colisao_corpo + 0.25)
+	for h in [1.0, 0.55]:
+		var origem_c := pos_base + Vector3(0.0, h, 0.0)
+		var q := PhysicsRayQueryParameters3D.create(origem_c, origem_c + dir_mov * alcance_curto, mascara_colisao_ambiente, excl)
+		q.hit_from_inside = true
+		var hit_c := space.intersect_ray(q)
+		if not hit_c.is_empty():
+			var n_c: Vector3 = hit_c.get("normal", Vector3.ZERO)
+			if Vector3(n_c.x, 0.0, n_c.z).length_squared() >= 0.0001:
+				return n_c
+
+	return Vector3.ZERO
+
+
+func _mover_com_colisao(deslocamento_xz: Vector3) -> Vector3:
+	var disp := Vector3(deslocamento_xz.x, 0.0, deslocamento_xz.z)
+	if disp.length_squared() <= 0.0000001:
+		return Vector3.ZERO
+	if not usar_colisao_paredes:
+		global_position += disp
+		return disp
+	var space := _obter_espaco_3d()
+	if space == null:
+		global_position += disp
+		return disp
+
+	var excl := _obter_excecoes_raycast(_obter_player())
+	var pos_inicial := global_position
+	var pos_atual := _despenetrar_horizontalmente(pos_inicial, space, excl)
+	var forma := _obter_forma_colisao_corpo()
+	var restante := disp
+
+	for _iter in range(3):
+		var len_rest := restante.length()
+		if len_rest <= 0.001:
+			break
+		var dir_rest := restante / len_rest
+
+		var params := PhysicsShapeQueryParameters3D.new()
+		params.shape = forma
+		params.transform = Transform3D(Basis.IDENTITY, pos_atual + Vector3(0.0, offset_y_colisao_corpo, 0.0))
+		params.motion = restante
+		params.margin = 0.02
+		params.collision_mask = mascara_colisao_ambiente
+		params.collide_with_bodies = true
+		params.collide_with_areas = false
+		params.exclude = excl
+
+		var origem_ray := pos_atual + Vector3(0.0, 1.0, 0.0)
+		var q_ray := PhysicsRayQueryParameters3D.create(
+			origem_ray,
+			origem_ray + restante + dir_rest * raio_colisao_corpo,
+			mascara_colisao_ambiente,
+			excl
+		)
+		q_ray.hit_from_inside = true
+		var hit_ray := space.intersect_ray(q_ray)
+		var cast := space.cast_motion(params)
+
+		var cast_livre := cast.is_empty() or (cast[0] >= 1.0 and cast[1] >= 1.0)
+		if cast_livre and hit_ray.is_empty():
+			pos_atual += restante
+			break
+
+		var f_segura := 1.0
+		if not cast.is_empty():
+			f_segura = maxf(0.0, cast[0] - 0.002)
+		if not hit_ray.is_empty():
+			var dist_hit := origem_ray.distance_to(hit_ray["position"] as Vector3)
+			f_segura = minf(f_segura, maxf(0.0, (dist_hit - raio_colisao_corpo - 0.02) / len_rest))
+
+		pos_atual += restante * f_segura
+		var sobra := restante * (1.0 - f_segura)
+		var normal := _obter_normal_parede_colisao(pos_atual, dir_rest, sobra.length(), hit_ray, space, excl)
+		var n_xz := Vector3(normal.x, 0.0, normal.z)
+		if n_xz.length_squared() < 0.0001:
+			break
+		n_xz = n_xz.normalized()
+		if sobra.dot(n_xz) < 0.0:
+			restante = sobra.slide(n_xz)
+		else:
+			break
+
+	global_position.x = pos_atual.x
+	global_position.z = pos_atual.z
+	return Vector3(pos_atual.x - pos_inicial.x, 0.0, pos_atual.z - pos_inicial.z)
+
+
+func _distancia_livre_direcao(dir_cand: Vector3, alcance: float, space: PhysicsDirectSpaceState3D, excl: Array[RID]) -> float:
+	var d := Vector3(dir_cand.x, 0.0, dir_cand.z)
+	if d.length_squared() < 0.0001:
+		return 0.0
+	d = d.normalized()
+	var params := PhysicsShapeQueryParameters3D.new()
+	params.shape = _obter_forma_colisao_corpo()
+	params.transform = Transform3D(Basis.IDENTITY, global_position + Vector3(0.0, offset_y_colisao_corpo, 0.0))
+	params.motion = d * alcance
+	params.margin = 0.02
+	params.collision_mask = mascara_colisao_ambiente
+	params.collide_with_bodies = true
+	params.collide_with_areas = false
+	params.exclude = excl
+	var cast := space.cast_motion(params)
+	var frac := 1.0 if cast.is_empty() else clampf(cast[0], 0.0, 1.0)
+
+	var origem_ray := global_position + Vector3(0.0, 1.0, 0.0)
+	var q_ray := PhysicsRayQueryParameters3D.create(
+		origem_ray,
+		origem_ray + d * (alcance + raio_colisao_corpo),
+		mascara_colisao_ambiente,
+		excl
+	)
+	q_ray.hit_from_inside = true
+	var hit_ray := space.intersect_ray(q_ray)
+	if not hit_ray.is_empty():
+		var dist_hit := origem_ray.distance_to(hit_ray["position"] as Vector3)
+		var frac_ray := clampf((dist_hit - raio_colisao_corpo - 0.02) / maxf(0.001, alcance), 0.0, 1.0)
+		frac = minf(frac, frac_ray)
+
+	return frac * alcance
+
+
+func _ajustar_altura_chao(permitir_ajuste_amplo: bool = false) -> void:
 	var space := _obter_espaco_3d()
 	if space == null:
 		return
+	var alt_topo := 1.5 if permitir_ajuste_amplo else maxf(0.55, altura_max_degrau + 0.1)
+	var alt_base := 3.0 if permitir_ajuste_amplo else 2.5
 	var query := PhysicsRayQueryParameters3D.create(
-		global_position + Vector3(0.0, 1.5, 0.0),
-		global_position - Vector3(0.0, 3.0, 0.0)
+		global_position + Vector3(0.0, alt_topo, 0.0),
+		global_position - Vector3(0.0, alt_base, 0.0),
+		mascara_colisao_ambiente,
+		_obter_excecoes_raycast(_obter_player())
 	)
-	query.exclude = _obter_excecoes_raycast(_obter_player())
 	var hit := space.intersect_ray(query)
 	if not hit.is_empty():
+		var normal_chao: Vector3 = hit.get("normal", Vector3.UP)
+		if normal_chao.y < 0.55:
+			return
 		var hit_y: float = (hit["position"] as Vector3).y
-		if absf(hit_y - global_position.y) <= 1.8:
-			global_position.y = hit_y
+		if permitir_ajuste_amplo:
+			if absf(hit_y - global_position.y) <= 2.5:
+				global_position.y = hit_y
+		else:
+			var diff_y := hit_y - global_position.y
+			if diff_y <= altura_max_degrau and diff_y >= -1.8:
+				global_position.y = hit_y
 
 
-func _aplicar_desvio_obstaculo(dir: Vector3) -> Vector3:
+func _aplicar_desvio_obstaculo(dir: Vector3, delta: float = 0.016) -> Vector3:
+	_timer_memoria_desvio = maxf(0.0, _timer_memoria_desvio - delta)
 	if not usar_desvio_obstaculo_raycast:
 		return dir
 	var space := _obter_espaco_3d()
@@ -819,24 +1089,40 @@ func _aplicar_desvio_obstaculo(dir: Vector3) -> Vector3:
 		return dir
 
 	var excl := _obter_excecoes_raycast(_obter_player())
-	var origem := global_position + Vector3(0.0, 1.0, 0.0)
-	var query_frente := PhysicsRayQueryParameters3D.create(origem, origem + dir * 1.6)
-	query_frente.exclude = excl
-	if space.intersect_ray(query_frente).is_empty():
+	if _distancia_livre_direcao(dir, 1.5, space, excl) >= 1.48:
 		return dir
 
-	var dir_esq := dir.rotated(Vector3.UP, deg_to_rad(42.0))
-	var dir_dir := dir.rotated(Vector3.UP, deg_to_rad(-42.0))
-	var livre_esq := space.intersect_ray(PhysicsRayQueryParameters3D.create(origem, origem + dir_esq * 1.9)).is_empty()
-	var livre_dir := space.intersect_ray(PhysicsRayQueryParameters3D.create(origem, origem + dir_dir * 1.9)).is_empty()
+	var alcance_teste := 1.6
+	if _timer_memoria_desvio <= 0.0:
+		var folga_pos := _distancia_livre_direcao(dir.rotated(Vector3.UP, deg_to_rad(35.0)), alcance_teste, space, excl)
+		var folga_neg := _distancia_livre_direcao(dir.rotated(Vector3.UP, deg_to_rad(-35.0)), alcance_teste, space, excl)
+		if absf(folga_pos - folga_neg) < 0.05:
+			for ang_desempate in [65.0, 95.0]:
+				var fp := _distancia_livre_direcao(dir.rotated(Vector3.UP, deg_to_rad(ang_desempate)), alcance_teste, space, excl)
+				var fn := _distancia_livre_direcao(dir.rotated(Vector3.UP, deg_to_rad(-ang_desempate)), alcance_teste, space, excl)
+				if absf(fp - fn) >= 0.05:
+					folga_pos = fp
+					folga_neg = fn
+					break
+		_sentido_desvio_preferido = 1.0 if folga_pos >= folga_neg else -1.0
+		_timer_memoria_desvio = 0.85
 
-	if livre_esq and not livre_dir:
-		return dir_esq
-	if livre_dir and not livre_esq:
-		return dir_dir
-	if livre_esq and livre_dir:
-		return dir_esq
-	return dir.rotated(Vector3.UP, deg_to_rad(90.0))
+	var melhor_dir := dir
+	var melhor_folga := _distancia_livre_direcao(dir, alcance_teste, space, excl)
+	for ang in [35.0, 65.0, 95.0, 130.0]:
+		for sinal in [_sentido_desvio_preferido, -_sentido_desvio_preferido]:
+			var cand := dir.rotated(Vector3.UP, deg_to_rad(ang * sinal)).normalized()
+			var folga := _distancia_livre_direcao(cand, alcance_teste, space, excl)
+			if folga >= 1.55:
+				if sinal != _sentido_desvio_preferido:
+					_sentido_desvio_preferido = sinal
+					_timer_memoria_desvio = 0.85
+				return cand
+			if folga > melhor_folga:
+				melhor_folga = folga
+				melhor_dir = cand
+
+	return melhor_dir
 
 
 func _mover_para(destino: Vector3, velocidade: float, delta: float) -> void:
@@ -857,21 +1143,36 @@ func _mover_para(destino: Vector3, velocidade: float, delta: float) -> void:
 		return
 
 	var passo_max := velocidade * delta
-	var dir := delta_xz / dist_xz
+	var dir_base := delta_xz / dist_xz
+	var dir := dir_base
 	if not usando_navmesh:
-		dir = _aplicar_desvio_obstaculo(dir)
+		dir = _aplicar_desvio_obstaculo(dir, delta)
 
-	if passo_max >= dist_xz and dir == (delta_xz / dist_xz):
-		global_position.x = alvo_passo.x
-		global_position.z = alvo_passo.z
+	var passo := minf(passo_max, dist_xz) if dir.distance_squared_to(dir_base) < 0.0001 else passo_max
+	var desloc_real := _mover_com_colisao(dir * passo)
+
+	if passo > 0.003 and desloc_real.length() < passo * 0.20:
+		var era_menor := _tempo_bloqueado_movimento < 0.9
+		_tempo_bloqueado_movimento += delta
+		if era_menor and _tempo_bloqueado_movimento >= 0.9:
+			_sentido_desvio_preferido *= -1.0
+			_timer_memoria_desvio = 1.0
 	else:
-		global_position += dir * passo_max
+		_tempo_bloqueado_movimento = maxf(0.0, _tempo_bloqueado_movimento - delta * 2.0)
 
-	_ajustar_altura_chao()
+	var dist_depois := _distancia_xz(global_position, alvo_passo)
+	if _menor_dist_alvo_mov == INF or dist_depois < _menor_dist_alvo_mov - 0.15:
+		_menor_dist_alvo_mov = dist_depois
+		_tempo_sem_progresso_alvo = 0.0
+	else:
+		_tempo_sem_progresso_alvo += delta
+
+	_ajustar_altura_chao(false)
 
 	if dist_xz > 0.05:
 		var vel_giro := velocidade_giro_cacada if estado_atual == Estado.CACADA else velocidade_giro_patrulha
-		_rotacionar_para_direcao(dir, delta, vel_giro)
+		var dir_rot := desloc_real.normalized() if desloc_real.length_squared() > 0.00002 else dir
+		_rotacionar_para_direcao(dir_rot, delta, vel_giro)
 
 
 func _rotacionar_para_direcao(dir_xz: Vector3, delta: float, vel_giro: float) -> void:
@@ -913,18 +1214,26 @@ func _gerar_waypoints_procedurais() -> Array[Vector3]:
 	var raios := [18.0, 24.0, 20.0, 26.0]
 	var space := _obter_espaco_3d()
 	var excl := _obter_excecoes_raycast(player)
+	var candidatas_totais: Array[Vector3] = []
 	for i in range(4):
 		var ang := float(i) * (TAU / 4.0) + 0.4
 		var r: float = raios[i]
 		var pt := Vector3(centro.x + cos(ang) * r, global_position.y, centro.z + sin(ang) * r)
 		if space != null:
-			var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(
+			var q := PhysicsRayQueryParameters3D.create(
 				Vector3(pt.x, centro.y + 8.0, pt.z),
-				Vector3(pt.x, centro.y - 16.0, pt.z)
-			))
-			if not hit.is_empty() and not excl.has(hit.get("rid")):
+				Vector3(pt.x, centro.y - 16.0, pt.z),
+				mascara_colisao_ambiente,
+				excl
+			)
+			var hit := space.intersect_ray(q)
+			if not hit.is_empty():
 				pt.y = (hit["position"] as Vector3).y
-		_waypoints_procedurais.append(pt)
+		candidatas_totais.append(pt)
+		if _posicao_livre_colisao(pt):
+			_waypoints_procedurais.append(pt)
+	if _waypoints_procedurais.is_empty():
+		_waypoints_procedurais = candidatas_totais
 	return _waypoints_procedurais
 
 
@@ -958,6 +1267,8 @@ func avancar_waypoint_patrulha() -> void:
 	if lista.is_empty():
 		return
 	indice_patrulha_atual = (indice_patrulha_atual + 1) % lista.size()
+	_tempo_sem_progresso_alvo = 0.0
+	_menor_dist_alvo_mov = INF
 
 
 func _distancia_xz(a: Vector3, b: Vector3) -> float:
@@ -970,7 +1281,9 @@ func _esta_no_alcance_captura(player: Player) -> bool:
 	var diff := player.global_position - global_position
 	var dist_3d := diff.length()
 	var dist_xz := Vector2(diff.x, diff.z).length()
-	return dist_3d <= distancia_captura or (dist_xz <= distancia_captura and absf(diff.y) <= 3.5)
+	if not (dist_3d <= distancia_captura or (dist_xz <= distancia_captura and absf(diff.y) <= 3.5)):
+		return false
+	return tem_linha_de_visao(player)
 
 
 func realizar_captura(player: Player) -> void:

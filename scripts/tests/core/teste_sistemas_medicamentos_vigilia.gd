@@ -28,6 +28,8 @@ func _executar() -> void:
 	var mundo := cena.instantiate()
 	root.add_child(mundo)
 	current_scene = mundo
+	await process_frame
+	await process_frame
 
 	var gerente := mundo.get_node_or_null("GameManager") as GameManager
 	var player := mundo.get_node_or_null("CharacterBody3D") as Player
@@ -40,6 +42,9 @@ func _executar() -> void:
 		quit(1)
 		return
 
+	var menu_inicialmente_visivel := hud.menu_medicamentos != null and hud.menu_medicamentos.visible
+	var jogo_inicialmente_pausado := paused
+
 	_teste_1_catalogo_medicamentos_sem_numeros()
 	_teste_2_sorteio_vidros_e_escolhas()
 	_teste_3_sistema_high_roller_e_traits()
@@ -48,6 +53,7 @@ func _executar() -> void:
 	_teste_6_esconderijo_e_comprometimento(mundo, player)
 	_teste_7_ramificacao_modo_noturno(gerente)
 	await _teste_8_inclinacao_independente_janela_e_cursor_pausa(hud, mundo, player)
+	await _teste_9_pausa_pilulas_z_order_e_legenda_hotbar(hud, gerente, player, menu_inicialmente_visivel, jogo_inicialmente_pausado)
 
 	mundo.queue_free()
 
@@ -341,6 +347,7 @@ func _teste_8_inclinacao_independente_janela_e_cursor_pausa(hud: HUD, mundo: Nod
 		"esquerda": [&"med_1_oval", &"med_1_pilula"],
 		"direita": [&"med_2_oval", &"med_3_pilula"]
 	})
+	_verificar(paused == true, "MenuEscolhaMedicamentos.abrir() deve pausar a SceneTree.")
 	await process_frame
 	await process_frame
 
@@ -362,15 +369,15 @@ func _teste_8_inclinacao_independente_janela_e_cursor_pausa(hud: HUD, mundo: Nod
 	_verificar(absf(menu.pivo_dir.rotation.z) < absf(rot_dir_antes), "Quando cursor sai da janela, vidro deve retornar suavemente ao neutro em vez de inclinar para fora.")
 	menu.definir_cursor_na_janela(true)
 
-	# 3. Bug do cursor ao pausar/retomar com Esc enquanto MenuEscolhaMedicamentos está aberto
+	# 3. Pausa e cursor ao pausar/retomar com Esc enquanto MenuEscolhaMedicamentos está aberto
 	var pausas := mundo.find_children("*", "MenuPausa", true, false)
 	_verificar(pausas.size() > 0, "MenuPausa deve existir na cena world.tscn.")
 	if pausas.size() > 0:
 		var menu_pausa := pausas[0] as MenuPausa
 		menu_pausa.pausar_jogo()
-		_verificar(paused == true, "Jogo deve entrar em pausa.")
+		_verificar(paused == true, "Jogo deve entrar/permanecer em pausa.")
 		menu_pausa.retomar_jogo()
-		_verificar(paused == false, "Jogo deve retomar após fechar pausa.")
+		_verificar(paused == true, "Jogo deve permanecer pausado ao fechar MenuPausa enquanto MenuEscolhaMedicamentos ainda está aberto.")
 		_verificar(Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE, "Cursor deve permanecer MOUSE_MODE_VISIBLE ao fechar pausa com menu de medicamentos aberto.")
 
 		# Player._unhandled_input não deve recapturar o mouse com clique esquerdo enquanto menu está aberto
@@ -381,6 +388,168 @@ func _teste_8_inclinacao_independente_janela_e_cursor_pausa(hud: HUD, mundo: Nod
 		_verificar(Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE, "Player._unhandled_input não deve capturar o mouse enquanto MenuEscolhaMedicamentos está aberto.")
 
 		menu.fechar()
+		_verificar(paused == false, "MenuEscolhaMedicamentos.fechar() deve despausar quando MenuPausa não está visível.")
 		_verificar(not menu_pausa._tem_menu_modal_cursor_ativo(), "Sem menu modal visível, MenuPausa deve voltar a capturar o mouse ao retomar.")
 
-	print("OK: Inclinação independente, limite de janela e preservação do cursor após pausa validados.")
+		menu.abrir({
+			"esquerda": [&"med_1_oval", &"med_1_pilula"],
+			"direita": [&"med_2_oval", &"med_3_pilula"]
+		})
+		_verificar(paused == true, "Reabrir MenuEscolhaMedicamentos deve pausar novamente a SceneTree.")
+		menu.escolher(0)
+		_verificar(paused == false, "MenuEscolhaMedicamentos.escolher(0) deve despausar o jogo após a escolha.")
+
+	print("OK: Inclinação independente, limite de janela e preservação de pausa/cursor validados.")
+
+
+func _teste_9_pausa_pilulas_z_order_e_legenda_hotbar(
+	hud: HUD,
+	gerente: GameManager,
+	player: Player,
+	menu_inicialmente_visivel: bool,
+	jogo_inicialmente_pausado: bool
+) -> void:
+	print("\n--- [9] Teste de Início Limpo, Z-Order, Física Pausada e Legenda Acima da Hotbar ---")
+	var menu := hud.obter_menu_medicamentos()
+	var legenda := hud.obter_legenda_radio()
+	var radio := gerente.radio as Radio
+	var tela_go := hud.obter_tela_game_over()
+
+	_verificar(menu != null and legenda != null and hud._barra != null and radio != null and tela_go != null,
+		"Componentes de HUD (menu, legenda, hotbar, radio, tela_game_over) devem existir.")
+	if menu == null or legenda == null or hud._barra == null or radio == null or tela_go == null:
+		return
+
+	# 1. Menu de medicamentos não abre automaticamente na inicialização do world.tscn
+	_verificar(not menu_inicialmente_visivel, "MenuEscolhaMedicamentos não deve iniciar aberto ao carregar world.tscn.")
+	_verificar(not jogo_inicialmente_pausado, "SceneTree não deve iniciar pausada ao carregar world.tscn.")
+	_verificar(menu.z_index == 50, "MenuEscolhaMedicamentos deve possuir z_index == 50 (atual: %d)." % menu.z_index)
+	_verificar(tela_go.z_index == 100, "TelaGameOver deve possuir z_index == 100 (atual: %d)." % tela_go.z_index)
+	_verificar(menu.get_index() > legenda.get_index() and menu.get_index() > hud._barra.get_index(),
+		"MenuEscolhaMedicamentos deve estar ordenado após LegendaRadioUI e Hotbar na árvore do HUD.")
+
+	# 2. LegendaRadioUI posicionada acima da Hotbar sem sobreposição
+	_verificar(legenda.hotbar_alvo == hud._barra, "LegendaRadioUI.hotbar_alvo deve apontar para hud._barra.")
+	radio.tocar_noticia(1)
+	legenda._ao_alterar_proximidade(1.0)
+	player.selecionar_slot(1)
+	await process_frame
+	await process_frame
+
+	_verificar(hud._barra.visible, "Hotbar deve estar visível ao trocar slot com menu fechado.")
+	_verificar(legenda.visible and legenda._painel_legenda.visible, "LegendaRadioUI deve estar visível durante transmissão do rádio.")
+	var rect_legenda := legenda._painel_legenda.get_global_rect()
+	var rect_hotbar := hud._barra.get_global_rect()
+	_verificar(rect_legenda.end.y <= rect_hotbar.position.y,
+		"LegendaRadioUI deve ficar acima da Hotbar sem sobreposição (legenda end.y=%.1f, hotbar top=%.1f)." % [rect_legenda.end.y, rect_hotbar.position.y])
+
+	# Trocar novamente de slot preserva ausência de sobreposição
+	player.selecionar_slot(2)
+	await process_frame
+	rect_legenda = legenda._painel_legenda.get_global_rect()
+	rect_hotbar = hud._barra.get_global_rect()
+	_verificar(rect_legenda.end.y <= rect_hotbar.position.y,
+		"LegendaRadioUI deve continuar acima da Hotbar após nova troca de slot (legenda end.y=%.1f, hotbar top=%.1f)." % [rect_legenda.end.y, rect_hotbar.position.y])
+
+	# 3. Ao abrir menu de pílulas: pausa mundo, mantém física das pílulas ativa e oculta Hotbar/Legenda
+	menu.abrir({
+		"esquerda": [&"med_1_oval", &"med_1_pilula"],
+		"direita": [&"med_2_oval", &"med_3_pilula"]
+	})
+	_verificar(paused == true, "MenuEscolhaMedicamentos.abrir() deve pausar o jogo.")
+	_verificar(not hud._barra.visible, "Hotbar deve ficar oculta enquanto MenuEscolhaMedicamentos está aberto.")
+	_verificar(not legenda.visible, "LegendaRadioUI deve ficar oculta enquanto MenuEscolhaMedicamentos está aberto.")
+
+	# Hotbar permanece oculta mesmo com tentativa de seleção/sincronização
+	player.selecionar_slot(0)
+	hud._sincronizar_hotbar()
+	_verificar(not hud._barra.visible, "Hotbar deve permanecer oculta durante menu de medicamentos mesmo após selecionar_slot/_sincronizar_hotbar.")
+
+	# Legenda permanece oculta mesmo com sinais do rádio
+	radio.transmissao_iniciada.emit(1)
+	radio.legenda_atualizada.emit("[RÁDIO]: Transmissão durante seleção de pílula", 30)
+	_verificar(not legenda.visible, "LegendaRadioUI deve permanecer oculta mesmo se rádio emitir sinais durante menu de medicamentos.")
+
+	# Física 3D das pílulas continua simulando no SubViewport enquanto o mundo principal permanece congelado
+	var filtro := hud.obter_filtro_delusio()
+	if filtro != null:
+		filtro.desfoque_fundo_atual = 0.0
+	var main_space := root.find_world_3d().space if root.find_world_3d() != null else RID()
+	if main_space.is_valid():
+		_verificar(not PhysicsServer3D.space_is_active(main_space), "Espaço 3D do mundo principal deve ficar inativo enquanto MenuEscolhaMedicamentos está aberto.")
+	if menu.subviewport_esq != null and menu.subviewport_esq.find_world_3d() != null:
+		_verificar(PhysicsServer3D.space_is_active(menu.subviewport_esq.find_world_3d().space),
+			"Espaço 3D de subviewport_esq deve permanecer ativo enquanto jogo está pausado.")
+
+	var tempo_dia_antes := gerente.tempo_dia_restante
+	var rb_esq: RigidBody3D = menu.pilulas_rb_esq[0]
+	var pos_rb_antes := rb_esq.position
+	menu.pivo_esq.rotation = Vector3.ZERO
+	menu.atualizar_inclinacao_mouse(Vector2(0.85, 0.25), 0.3)
+	for _i in range(8):
+		await physics_frame
+	await process_frame
+
+	_verificar(is_equal_approx(gerente.tempo_dia_restante, tempo_dia_antes),
+		"Tempo do dia no GameManager não deve avançar enquanto MenuEscolhaMedicamentos pausa o jogo.")
+	_verificar(rb_esq.position.distance_to(pos_rb_antes) > 0.005,
+		"RigidBody3D das pílulas em subviewport_esq deve continuar simulando enquanto jogo está pausado (delta=%.4f)." % rb_esq.position.distance_to(pos_rb_antes))
+	if filtro != null:
+		_verificar(filtro.desfoque_fundo_atual > 0.01,
+			"FiltroDelusioControlador deve continuar animando desfoque_fundo_atual mesmo com jogo pausado.")
+
+	# Esc abre MenuPausa sobre o menu de pílulas e Esc novamente fecha apenas MenuPausa
+	var pausas := gerente.get_parent().find_children("*", "MenuPausa", true, false)
+	if not pausas.is_empty():
+		var menu_pausa := pausas[0] as MenuPausa
+		_verificar(menu_pausa.is_in_group("menu_pausa_ui"), "MenuPausa deve estar no grupo 'menu_pausa_ui'.")
+		var ev_esc := InputEventAction.new()
+		ev_esc.action = "ui_cancel"
+		ev_esc.pressed = true
+		menu_pausa._input(ev_esc)
+		_verificar(menu_pausa.visible and paused == true, "Esc durante MenuEscolhaMedicamentos deve abrir MenuPausa.")
+		menu_pausa._input(ev_esc)
+		_verificar(not menu_pausa.visible and paused == true and menu.visible,
+			"Segundo Esc deve fechar MenuPausa mantendo MenuEscolhaMedicamentos aberto e o jogo pausado.")
+
+	# [P] no Debug Mode deve fechar MenuEscolhaMedicamentos mesmo enquanto SceneTree está pausada
+	var modo_anterior := gerente.modo_jogo
+	gerente.modo_jogo = GameManager.MODO_DEBUG
+	var ev_p := InputEventKey.new()
+	ev_p.keycode = KEY_P
+	ev_p.physical_keycode = KEY_P
+	ev_p.pressed = true
+	ev_p.echo = false
+	menu._unhandled_input(ev_p)
+	_verificar(not menu.visible and paused == false, "[P] durante pausa em Debug Mode deve fechar MenuEscolhaMedicamentos e despausar.")
+	gerente.modo_jogo = modo_anterior
+
+	# Reabre e escolhe opção 0 -> despausa, restaura espaço 3D principal e restaura visibilidade da LegendaRadioUI
+	menu.abrir({
+		"esquerda": [&"med_1_oval", &"med_1_pilula"],
+		"direita": [&"med_2_oval", &"med_3_pilula"]
+	})
+	menu.escolher(0)
+	_verificar(not menu.visible, "MenuEscolhaMedicamentos deve fechar após escolher(0).")
+	_verificar(paused == false, "MenuEscolhaMedicamentos.escolher(0) deve despausar o jogo.")
+	if main_space.is_valid():
+		_verificar(PhysicsServer3D.space_is_active(main_space), "Espaço 3D do mundo principal deve ser reativado após fechar MenuEscolhaMedicamentos.")
+	_verificar(legenda.visible, "LegendaRadioUI deve voltar a ficar visível após fechar MenuEscolhaMedicamentos.")
+
+	# Verificar que sair da árvore (_exit_tree) com menu aberto restaura o espaço 3D principal
+	var menu_descarte := MenuEscolhaMedicamentos.new()
+	root.add_child(menu_descarte)
+	menu_descarte.abrir({
+		"esquerda": [&"med_1_oval", &"med_1_pilula"],
+		"direita": [&"med_2_oval", &"med_3_pilula"]
+	})
+	if main_space.is_valid():
+		_verificar(not PhysicsServer3D.space_is_active(main_space), "Menu temporário aberto deve desativar espaço 3D principal.")
+	menu_descarte.queue_free()
+	await process_frame
+	if main_space.is_valid():
+		_verificar(PhysicsServer3D.space_is_active(main_space), "_exit_tree de MenuEscolhaMedicamentos deve restaurar o espaço 3D principal.")
+	paused = false
+
+	radio.parar_radio()
+	print("OK: Início sem pílulas, Z-order, física dos SubViewports em pausa e legenda acima da hotbar validados.")
