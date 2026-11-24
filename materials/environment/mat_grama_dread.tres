@@ -1,0 +1,15 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/grama_dread.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" path="res://assets/environment/cenario/textures_dread/tufo_capim_512.png" id="2_capim"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/textura_capim = ExtResource("2_capim")
+shader_parameter/cor_topo = Color(0.95, 0.92, 0.84, 1)
+shader_parameter/cor_base_ao = Color(0.32, 0.3, 0.24, 1)
+shader_parameter/forca_ao_base = 0.72
+shader_parameter/velocidade_vento = 1.35
+shader_parameter/amplitude_vento = 0.075
+shader_parameter/direcao_vento = Vector2(1, 0.35)

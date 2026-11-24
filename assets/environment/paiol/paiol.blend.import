@@ -39,7 +39,22 @@ import_script/path=""
 materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
-_subresources={}
+_subresources={
+"nodes": {
+"PATH:Paiol_Estantes-col": {
+"physics/shape_type": 2
+},
+"PATH:Paiol_Estrutura-col": {
+"physics/shape_type": 2
+},
+"PATH:Paiol_Feno-col": {
+"physics/shape_type": 2
+},
+"PATH:Paiol_Telhado-col": {
+"physics/shape_type": 2
+}
+}
+}
 blender/nodes/visible=0
 blender/nodes/active_collection_only=false
 blender/nodes/punctual_lights=true
