@@ -242,22 +242,6 @@ func obter_caminho_para_estado(estado: int, dia: int = 1) -> String:
 
 
 func _jogador_esta_em_cacada() -> bool:
-	var gerente := GameManager.instance
-	if gerente == null or gerente.horario_atual != 2:
-		return false
-
-	if gerente.rondante != null and is_instance_valid(gerente.rondante) and ("ativa" in gerente.rondante) and gerente.rondante.ativa:
-		if "estado_atual" in gerente.rondante:
-			var est_r: int = int(gerente.rondante.estado_atual)
-			if est_r == RondanteFazenda.Estado.CACADA or est_r == RondanteFazenda.Estado.ATAQUE_GARRAS:
-				return true
-
-	if gerente.silhueta != null and is_instance_valid(gerente.silhueta) and ("ativa" in gerente.silhueta) and gerente.silhueta.ativa:
-		if "estado_atual" in gerente.silhueta:
-			var est_s: int = int(gerente.silhueta.estado_atual)
-			if est_s == Silhueta.Estado.AMEACA_LANTERNA or est_s == Silhueta.Estado.INVESTIDA:
-				return true
-
 	return false
 
 

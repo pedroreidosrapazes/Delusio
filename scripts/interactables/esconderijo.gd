@@ -160,12 +160,4 @@ func esta_comprometido(player: Player) -> bool:
 	if player.esta_com_lanterna_acesa():
 		return true
 
-	# Se a Silhueta estiver em investida direta próxima
-	var gerente := GameManager.instance
-	if gerente != null and gerente.silhueta != null and is_instance_valid(gerente.silhueta):
-		var sil := gerente.silhueta
-		if ("em_investida" in sil) and sil.em_investida:
-			if global_position.distance_to(sil.global_position) < 12.0:
-				return true
-
 	return false

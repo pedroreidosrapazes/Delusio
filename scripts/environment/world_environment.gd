@@ -82,29 +82,29 @@ func _obter_config_horario(estado: int) -> Dictionary:
 			}
 		EstadoDia.TARDE:
 			return {
-				"light_rot": Vector3(-16, -115, 0),
-				"light_color": Color("#e67e38"),
-				"light_energy": 0.75,
-				"bg_energy": 0.68,
-				"ambient_color": Color("#8c4a27"),
-				"ambient_energy": 0.55,
-				"fog_color": Color("#7a4930"),
-				"fog_density": 0.016,
-				"contrast": 1.10,
-				"saturation": 0.92
+				"light_rot": Vector3(-22, -110, 0),
+				"light_color": Color("#f09a59"),
+				"light_energy": 0.92,
+				"bg_energy": 0.85,
+				"ambient_color": Color("#c9865b"),
+				"ambient_energy": 0.75,
+				"fog_color": Color("#9c6b4e"),
+				"fog_density": 0.009,
+				"contrast": 1.06,
+				"saturation": 0.96
 			}
 		EstadoDia.NOITE:
 			return {
 				"light_rot": Vector3(-35, -45, 0),
-				"light_color": Color("#6482ad"),
-				"light_energy": 0.46,
-				"bg_energy": 0.45,
-				"ambient_color": Color("#24334d"),
-				"ambient_energy": 0.58,
-				"fog_color": Color("#1b283d"),
-				"fog_density": 0.020,
-				"contrast": 1.08,
-				"saturation": 0.82
+				"light_color": Color("#7c9bc9"),
+				"light_energy": 0.62,
+				"bg_energy": 0.60,
+				"ambient_color": Color("#3f5880"),
+				"ambient_energy": 0.72,
+				"fog_color": Color("#2a3c59"),
+				"fog_density": 0.014,
+				"contrast": 1.06,
+				"saturation": 0.88
 			}
 		_:
 			return _obter_config_horario(EstadoDia.DIA)

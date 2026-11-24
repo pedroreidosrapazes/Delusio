@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://6n30jxdxtpig"]
+
+[ext_resource type="PackedScene" uid="uid://47xxo2weeyfc" path="res://assets/environment/paiol/paiol.blend" id="1_0tnld"]
+
+[node name="paiol" unique_id=2143289440 instance=ExtResource("1_0tnld")]

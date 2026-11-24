@@ -11,15 +11,17 @@ signal transmissao_finalizada()
 signal radio_desligado()
 signal estatica_direcional_tocada(zona: String)
 
-enum EstadoTransmissao { INATIVO = 0, DIGITANDO = 1, PAUSA_ENTRE_FRASES = 2, PAUSA_REPETICAO = 3 }
+enum EstadoTransmissao { INATIVO = 0, DIGITANDO = 1, PAUSA_ENTRE_FRASES = 2, PAUSA_REPETICAO = 3, SINTONIZANDO = 4 }
 
 @export_category("Configurações do Player de Áudio")
 @export var audio_player: AudioStreamPlayer3D
 @export_range(2.0, 50.0, 0.5) var alcance_audicao_legenda: float = 22.0
+@export var som_sintonizando: AudioStream = preload("res://assets/audio/Efeito Sonoro - Sintonizando Rádio.mp3")
 
 @export_category("Voz Sintética e Efeito Typewriter")
 ## Arraste aqui os clipes curtos de fala sintética (ex: audioJornal (1), (2), (3) em .mp3/.ogg/.wav).
 @export var sons_jornal: Array[AudioStream] = []
+@export_range(0.5, 30.0, 0.1) var duracao_maxima_clipe_voz_s: float = 5.0
 @export_range(0.01, 0.2, 0.005) var velocidade_texto: float = 0.04
 @export_range(0.2, 5.0, 0.1) var pausa_padrao_entre_frases: float = 1.4
 @export_range(0.5, 1.5, 0.01) var pitch_min: float = 0.95
@@ -223,6 +225,19 @@ func tocar_noticia(dia: int) -> void:
 	interacao_ativa = true
 	prompt_interacao = "Desligar Rádio"
 
+	if som_sintonizando != null:
+		_desativar_loop_stream(som_sintonizando)
+		_estado = EstadoTransmissao.SINTONIZANDO
+		var dur_sint := som_sintonizando.get_length()
+		_tempo_pausa_restante = dur_sint if dur_sint > 0.1 else 2.5
+		audio_player.volume_db = _volume_base_db
+		audio_player.pitch_scale = 1.0
+		audio_player.stream = som_sintonizando
+		audio_player.play()
+		_atualizar_proximidade_ouvinte(true)
+		print("Rádio: Sintonizando antes do boletim do Dia ", dia)
+		return
+
 	transmissao_iniciada.emit(dia)
 	_atualizar_proximidade_ouvinte(true)
 	_iniciar_frase_atual()
@@ -267,6 +282,15 @@ func _process(delta: float) -> void:
 	_atualizar_proximidade_ouvinte(false)
 
 	match _estado:
+		EstadoTransmissao.SINTONIZANDO:
+			_tempo_pausa_restante -= delta
+			if audio_player == null or not audio_player.playing or _tempo_pausa_restante <= 0.0:
+				if audio_player != null and audio_player.playing:
+					audio_player.stop()
+				transmissao_iniciada.emit(_dia_atual_transmissao)
+				_atualizar_proximidade_ouvinte(true)
+				_iniciar_frase_atual()
+				print("Rádio: Iniciando boletim sincronizado do Dia ", _dia_atual_transmissao)
 		EstadoTransmissao.DIGITANDO:
 			_processar_digitacao(delta)
 		EstadoTransmissao.PAUSA_ENTRE_FRASES:
@@ -313,9 +337,13 @@ func _processar_digitacao(delta: float) -> void:
 
 	var restantes := total_chars - _caracteres_visiveis
 	if restantes > 2:
-		if audio_player != null and not audio_player.playing:
-			_cursor_clipe_longo = 0.0
-			_tocar_proximo_clipe_vocal()
+		if audio_player != null:
+			if not audio_player.playing:
+				_cursor_clipe_longo = 0.0
+				_tocar_proximo_clipe_vocal()
+			elif audio_player.get_playback_position() >= duracao_maxima_clipe_voz_s:
+				_cursor_clipe_longo = 0.0
+				_tocar_proximo_clipe_vocal()
 	elif _caracteres_visiveis >= total_chars:
 		_entrar_em_pausa_frase()
 
@@ -392,13 +420,13 @@ func _tocar_proximo_clipe_vocal() -> void:
 	audio_player.pitch_scale = randf_range(minf(pitch_min, pitch_max), maxf(pitch_min, pitch_max))
 	audio_player.stream = clipe
 
-	# Se o clipe for mais longo que uma frase (~>4s), avança sequencialmente pela faixa sem pular para silêncio
-	var duracao := clipe.get_length()
+	# Limita o clipe vocal aos primeiros duracao_maxima_clipe_voz_s (5s) para evitar sons indesejados no restante do áudio
+	var duracao := minf(clipe.get_length(), duracao_maxima_clipe_voz_s)
 	var inicio := 0.0
-	if duracao > 4.0:
-		if _cursor_clipe_longo >= duracao - 1.5:
+	if duracao > 1.5:
+		if _cursor_clipe_longo >= duracao - 0.8:
 			_cursor_clipe_longo = 0.0
-		inicio = clampf(_cursor_clipe_longo, 0.0, maxf(0.0, duracao - 1.5))
+		inicio = clampf(_cursor_clipe_longo, 0.0, maxf(0.0, duracao - 0.8))
 	audio_player.play(inicio)
 
 
@@ -406,8 +434,9 @@ func _parar_voz_suavemente() -> void:
 	if audio_player == null or not audio_player.playing:
 		return
 
-	if audio_player.stream != null and audio_player.stream.get_length() > 4.0:
-		_cursor_clipe_longo = audio_player.get_playback_position()
+	if audio_player.stream != null and audio_player.stream.get_length() > 1.5:
+		var pos := audio_player.get_playback_position()
+		_cursor_clipe_longo = pos if pos < duracao_maxima_clipe_voz_s - 0.5 else 0.0
 
 	if _tween_fade_voz and _tween_fade_voz.is_valid():
 		_tween_fade_voz.kill()

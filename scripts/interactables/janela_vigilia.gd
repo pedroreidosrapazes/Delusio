@@ -63,33 +63,6 @@ func notificar_saida_janela(player: Player) -> void:
 func avaliar_ameacas_externas(player: Player) -> Array[Node3D]:
 	var avistados: Array[Node3D] = []
 	var gerente := GameManager.instance
-	var origem := obter_transform_camera().origin
-	var frente := -obter_transform_camera().basis.z.normalized()
-
-	if gerente != null and gerente.silhueta != null and is_instance_valid(gerente.silhueta):
-		var sil := gerente.silhueta
-		if ("ativa" in sil) and sil.ativa:
-			var d := origem.distance_to(sil.global_position)
-			var dir_sil := (sil.global_position - origem).normalized()
-			if d <= alcance_deteccao_monstros and frente.dot(dir_sil) >= 0.35:
-				avistados.append(sil)
-				ameaca_avistada_pela_janela.emit(sil)
-				if player != null and not player.esta_com_lanterna_acesa():
-					if sil.has_method("recuar_anel"):
-						sil.recuar_anel()
-					if sil.has_method("mover_para_novo_local"):
-						sil.mover_para_novo_local()
-					gerente.status_temporario.emit("Você encarou a Silhueta pela janela e ela recuou na névoa.")
-
-	if gerente != null and ("rondante" in gerente) and gerente.rondante != null and is_instance_valid(gerente.rondante):
-		var rond := gerente.rondante
-		if ("ativa" in rond) and rond.ativa and ("estado_atual" in rond) and int(rond.estado_atual) != RondanteFazenda.Estado.EM_ESPERA:
-			var d_r := origem.distance_to(rond.global_position)
-			if d_r <= alcance_deteccao_monstros:
-				avistados.append(rond)
-				ameaca_avistada_pela_janela.emit(rond)
-				gerente.status_temporario.emit("Você avistou movimento rondando o terreno lá fora...")
-
 	if gerente != null and gerente.has_method("registrar_vigilia_janela"):
 		gerente.registrar_vigilia_janela()
 

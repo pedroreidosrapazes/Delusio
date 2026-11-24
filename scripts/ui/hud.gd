@@ -332,10 +332,7 @@ func _atualizar_label_timer_dia() -> void:
 			_label_timer_dia.text = "TARDE  •  %s" % hora_txt
 			_label_timer_dia.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_AMBAR)
 		_:
-			if gerente.modo_noturno == GameManager.ModoNoturno.VIGILIA_DOMESTICA and gerente.exigir_conclusao_vigilia_para_dormir and not gerente.vigilia_concluida:
-				_label_timer_dia.text = "VIGÍLIA  •  %ds" % int(ceilf(gerente.tempo_vigilia_restante))
-			else:
-				_label_timer_dia.text = "DIA %d  •  %s" % [gerente.dia_atual, hora_txt]
+			_label_timer_dia.text = "DIA %d  •  %s" % [gerente.dia_atual, hora_txt]
 			_label_timer_dia.add_theme_color_override("font_color", TemaSurvivalHorror.COR_DESTAQUE_VERMELHO)
 
 
@@ -740,7 +737,7 @@ func _on_dia_iniciado(_dia: int) -> void:
 		_painel_lista_tarefas.atualizar_lista()
 	_atualizar_label_timer_dia()
 	_atualizar_indicador_lanterna()
-	if DisplayServer.get_name() != "headless" and not _aguardando_banner_noite:
+	if DisplayServer.get_name() != "headless" and not _aguardando_banner_noite and not (GameManager.instance != null and GameManager.instance.em_pesadelo):
 		abrir_menu_medicamentos()
 
 

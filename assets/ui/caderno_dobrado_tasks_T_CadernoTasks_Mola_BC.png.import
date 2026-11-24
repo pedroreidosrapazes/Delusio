@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dgjvf6kj0yr62"
-path="res://.godot/imported/caderno_dobrado_tasks_T_CadernoTasks_Mola_BC.png-973e960dafe27c6746e06f3b377ad54a.ctex"
+path.s3tc="res://.godot/imported/caderno_dobrado_tasks_T_CadernoTasks_Mola_BC.png-973e960dafe27c6746e06f3b377ad54a.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "9458d058f205d38e8306ac8fb0b8dca0"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/ui/caderno_dobrado_tasks_T_CadernoTasks_Mola_BC.png"
-dest_files=["res://.godot/imported/caderno_dobrado_tasks_T_CadernoTasks_Mola_BC.png-973e960dafe27c6746e06f3b377ad54a.ctex"]
+dest_files=["res://.godot/imported/caderno_dobrado_tasks_T_CadernoTasks_Mola_BC.png-973e960dafe27c6746e06f3b377ad54a.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

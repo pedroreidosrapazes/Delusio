@@ -453,17 +453,6 @@ func receber_estimulo_sonoro(pos: Vector3, raio: float) -> void:
 	_tempo_sem_progresso_alvo = 0.0
 	_menor_dist_alvo_mov = INF
 
-	var player := _obter_player()
-	if player != null and player.esta_escondido():
-		if global_position.distance_to(pos) <= 8.0:
-			viu_jogador_entrar_esconderijo = true
-			if estado_atual != Estado.CACADA:
-				ultima_posicao_vista_jogador = pos
-				tempo_tolerancia_esconderijo_restante = cfg.tempo_tolerancia_esconderijo
-				mudar_estado(Estado.CACADA)
-			som_investigado.emit(pos)
-			return
-
 	if estado_atual in [Estado.PATRULHA, Estado.INVESTIGANDO, Estado.ESPREITA_QUINA, Estado.BUSCA_FRUSTRADA, Estado.RETIRANDO]:
 		mudar_estado(Estado.INVESTIGANDO)
 		som_investigado.emit(pos)
@@ -492,7 +481,7 @@ func receber_foco_lanterna(delta: float) -> void:
 		# Dilema tático: usar a lanterna contra o Rondante atrai a Silhueta
 		var gerente := GameManager.instance
 		if gerente != null and gerente.silhueta != null and is_instance_valid(gerente.silhueta):
-			var sil := gerente.silhueta
+			var sil = gerente.silhueta
 			if ("ativa" in sil) and sil.ativa and sil.has_method("avancar_anel"):
 				sil.avancar_anel()
 
@@ -752,24 +741,14 @@ func processar_ia(delta: float) -> void:
 				ronda_encerrada_retirada.emit()
 
 
-func _entrar_em_cacada(player: Player, cfg: CriaturaConfig) -> void:
-	ultima_posicao_vista_jogador = player.global_position
-	tempo_tolerancia_esconderijo_restante = cfg.tempo_tolerancia_esconderijo
-	if cfg.modo_presenca_rondante == CriaturaConfig.ModoPresencaRondante.PRESSAO_DINAMICA:
-		tempo_ronda_restante = maxf(tempo_ronda_restante, 12.0)
-	if audio_vocalizacao != null and audio_vocalizacao.stream != null and not audio_vocalizacao.playing:
-		audio_vocalizacao.play()
-	mudar_estado(Estado.CACADA)
+func _entrar_em_cacada(_player: Player, _cfg: CriaturaConfig) -> void:
+	# Mecânica de perseguição removida: mantém patrulha normal.
+	if estado_atual != Estado.PATRULHA:
+		mudar_estado(Estado.PATRULHA)
 
 
-func _iniciar_ataque_garras(player: Player) -> void:
-	tempo_ataque_restante = duracao_ataque_garras
-	if player != null:
-		_rotacionar_para_direcao(player.global_position - global_position, 0.0, velocidade_giro_cacada)
-	mudar_estado(Estado.ATAQUE_GARRAS)
-	if is_inside_tree():
-		BancoAudioDelusio.tocar_3d(self, &"rondante_garras", global_position, 1.0, 24.0, 0.06)
-	ataque_garras_iniciado.emit(player)
+func _iniciar_ataque_garras(_player: Player) -> void:
+	mudar_estado(Estado.PATRULHA)
 
 
 func _iniciar_retirada() -> void:

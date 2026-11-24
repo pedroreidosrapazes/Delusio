@@ -82,34 +82,7 @@ func definir_estado_horario(estado: int, imediato: bool = true) -> void:
 
 
 func calcular_tensao_silhueta() -> float:
-	var gerente := GameManager.instance
-	if gerente == null or gerente.silhueta == null or not is_instance_valid(gerente.silhueta) or not gerente.silhueta.visible:
-		return 0.0
-	var cam := gerente.camera_player
-	if cam == null or not is_instance_valid(cam):
-		return 0.0
-
-	var pos_cam := cam.global_position
-	var pos_sil := gerente.silhueta.global_position
-	var dist := pos_cam.distance_to(pos_sil)
-	if dist > 30.0:
-		return 0.0
-
-	var prox := 1.0 - clampf(dist / 30.0, 0.0, 1.0)
-	var dir_olhar := -cam.global_transform.basis.z.normalized()
-	var dir_para_silhueta := (pos_sil - pos_cam).normalized()
-	var alinhamento := maxf(0.0, dir_olhar.dot(dir_para_silhueta))
-	var tensao_base := clampf(prox * 0.25 + (prox * alinhamento) * 0.20, 0.0, 0.45)
-
-	var bonus_estado := 0.0
-	if "estado_atual" in gerente.silhueta:
-		match int(gerente.silhueta.estado_atual):
-			3: # AMEACA_LANTERNA
-				bonus_estado = 0.15
-			5, 6: # INVESTIDA, CAPTURA
-				bonus_estado = 0.30
-
-	return clampf(tensao_base + bonus_estado, 0.0, 0.60)
+	return 0.0
 
 
 func _process(delta: float) -> void:

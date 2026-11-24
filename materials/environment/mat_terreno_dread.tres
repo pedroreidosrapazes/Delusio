@@ -1,0 +1,17 @@
+[gd_resource type="ShaderMaterial" load_steps=4 format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/terreno_dread.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" path="res://assets/environment/cenario/textures_dread/grama_seca_512.png" id="2_grama"]
+[ext_resource type="Texture2D" path="res://assets/environment/cenario/textures_dread/terra_lama_512.png" id="3_terra"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/textura_grama = ExtResource("2_grama")
+shader_parameter/textura_terra = ExtResource("3_terra")
+shader_parameter/usar_splatmap = false
+shader_parameter/escala_uv_grama = 42.0
+shader_parameter/escala_uv_terra = 38.0
+shader_parameter/tonalidade_geral = Color(0.92, 0.9, 0.85, 1)
+shader_parameter/escala_ruido = 0.085
+shader_parameter/intensidade_ruido = 0.22
