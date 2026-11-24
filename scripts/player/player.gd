@@ -585,24 +585,7 @@ func _processar_instabilidade_lanterna(delta: float) -> void:
 	if luz_lanterna == null or not is_instance_valid(luz_lanterna) or not _lanterna_equipada or not _luz_lanterna_acesa:
 		return
 
-	var gerente := GameManager.instance
-	if gerente != null and gerente.silhueta != null and is_instance_valid(gerente.silhueta) and gerente.silhueta.visible:
-		var dist := global_position.distance_to(gerente.silhueta.global_position)
-		var fator := calcular_fator_instabilidade_lanterna(dist)
-		var em_ameaca := ("estado_atual" in gerente.silhueta) and int(gerente.silhueta.estado_atual) == Silhueta.Estado.AMEACA_LANTERNA
-		if em_ameaca:
-			var flicker_ameaca := sin(Time.get_ticks_msec() * 0.09) * 0.45 + sin(Time.get_ticks_msec() * 0.028) * 0.25
-			luz_lanterna.light_energy = clampf(_energia_base_lanterna * (0.55 + flicker_ameaca), _energia_base_lanterna * 0.18, _energia_base_lanterna * 1.15)
-			if _cooldown_dica_lanterna <= 0.0:
-				_cooldown_dica_lanterna = 6.0
-				gerente.status_temporario.emit("A lanterna está enfurecendo a Silhueta! Apague [F]!")
-		elif fator < 1.0:
-			var flicker := sin(Time.get_ticks_msec() * 0.045) * 0.25 + sin(Time.get_ticks_msec() * 0.012) * 0.15
-			luz_lanterna.light_energy = clampf(_energia_base_lanterna * (fator + flicker), _energia_base_lanterna * 0.35, _energia_base_lanterna * 1.15)
-		else:
-			luz_lanterna.light_energy = _energia_base_lanterna
-	else:
-		luz_lanterna.light_energy = _energia_base_lanterna
+	luz_lanterna.light_energy = _energia_base_lanterna
 
 
 func tentar_interagir() -> void:

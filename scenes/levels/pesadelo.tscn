@@ -1,0 +1,109 @@
+[gd_scene format=3 uid="uid://djntrytic6sfg"]
+
+[ext_resource type="PackedScene" uid="uid://l6wt7l2fvf51" path="res://assets/environment/pesadelo/Pesadelo.blend" id="1_pesadelo"]
+[ext_resource type="Script" uid="uid://cuqsqvr3m8xxl" path="res://scripts/player/player.gd" id="2_player"]
+[ext_resource type="PackedScene" uid="uid://cp36w1u2p3dgk" path="res://scenes/props/flashlight.tscn" id="3_flashlight"]
+[ext_resource type="Script" uid="uid://wa27lagnc7gq" path="res://scripts/ui/hud.gd" id="4_hud"]
+[ext_resource type="PackedScene" uid="uid://pausamenu001" path="res://scenes/ui/menu_pausa.tscn" id="5_pausa"]
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_chao"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.45
+height = 1.8
+
+[sub_resource type="Environment" id="Environment_pesadelo"]
+background_mode = 1
+background_color = Color(0.03, 0.045, 0.08, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.16, 0.22, 0.34, 1)
+ambient_light_energy = 0.62
+tonemap_mode = 3
+fog_enabled = true
+fog_light_color = Color(0.11, 0.16, 0.24, 1)
+fog_density = 0.018
+adjustment_enabled = true
+adjustment_contrast = 1.06
+adjustment_saturation = 0.85
+
+[node name="Pesadelo" type="Node3D" unique_id=1671583667]
+
+[node name="PesadeloCenario" parent="." unique_id=90867860 instance=ExtResource("1_pesadelo")]
+transform = Transform3D(0.76, 0, 0, 0, 0.76, 0, 0, 0, 0.76, 0, 0, 0)
+
+[node name="ChaoColisao" type="StaticBody3D" parent="." unique_id=877891046]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ChaoColisao" unique_id=479353592]
+shape = SubResource("WorldBoundaryShape3D_chao")
+
+[node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1692737834 node_paths=PackedStringArray("reticula") groups=["player"]]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 15, 0.1, 0)
+script = ExtResource("2_player")
+reticula = NodePath("../Hud/ColorRect")
+
+[node name="Camera3D" type="Camera3D" parent="CharacterBody3D" unique_id=477919524]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, -0.5585556)
+
+[node name="Flashlight" parent="CharacterBody3D/Camera3D" unique_id=1254993343 instance=ExtResource("3_flashlight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2800002, -0.22000003, -0.37013054)
+
+[node name="SpotLight3D" type="SpotLight3D" parent="CharacterBody3D/Camera3D/Flashlight" unique_id=39576199]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.15)
+light_energy = 4.8
+shadow_enabled = true
+spot_range = 34.0
+spot_angle = 54.0
+
+[node name="RayCast3D" type="RayCast3D" parent="CharacterBody3D/Camera3D" unique_id=1295688174]
+target_position = Vector3(0, 0, -2.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D" unique_id=676199964]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=59454105]
+transform = Transform3D(0.707107, -0.40558, 0.579228, 0, 0.819152, 0.573576, -0.707107, -0.40558, 0.579228, 0, 30, 0)
+light_color = Color(0.45, 0.56, 0.78, 1)
+light_energy = 0.55
+shadow_enabled = true
+
+[node name="LuzNoiteEntrada" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 14, 0)
+light_color = Color(0.38, 0.5, 0.75, 1)
+light_energy = 1.2
+omni_range = 45.0
+
+[node name="LuzNoiteFundo" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 14, 0)
+light_color = Color(0.32, 0.44, 0.68, 1)
+light_energy = 1.1
+omni_range = 45.0
+
+[node name="LuzCerebro" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31, 33, 0)
+light_color = Color(0.92, 0.8, 0.86, 1)
+light_energy = 4.0
+omni_range = 35.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=312656896]
+environment = SubResource("Environment_pesadelo")
+
+[node name="Hud" type="CanvasLayer" parent="." unique_id=330637667 node_paths=PackedStringArray("player")]
+script = ExtResource("4_hud")
+player = NodePath("../CharacterBody3D")
+
+[node name="LabelTarefas" type="Label" parent="Hud" unique_id=1386226155]
+visible = false
+offset_left = 51.0
+offset_top = 44.0
+offset_right = 375.0
+offset_bottom = 105.0
+
+[node name="ColorRect" type="ColorRect" parent="Hud" unique_id=569641083]
+offset_left = 572.0
+offset_top = 305.0
+offset_right = 612.0
+offset_bottom = 345.0
+scale = Vector2(0.13650861, 0.08885167)
+
+[node name="CanvasLayer_Pausa" parent="." unique_id=748696965 instance=ExtResource("5_pausa")]

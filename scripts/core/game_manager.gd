@@ -30,25 +30,26 @@ var modo_noturno: int = ModoNoturno.NENHUM
 @export var modo_jogo: int = ModoJogo.ENDLESS
 @export var dia_atual: int = 1
 @export var tarefas_totais: int = 3
-@export var duracao_dia_segundos: float = 180.0
+@export var duracao_dia_segundos: float = 360.0
 @export var duracao_vigilia_segundos: float = 45.0
 @export var exigir_conclusao_vigilia_para_dormir: bool = false
 
 var tarefas_concluidas: int = 0
 var horario_atual: int = 0
-var tempo_dia_restante: float = 180.0
-var duracao_dia_efetiva: float = 180.0
+var tempo_dia_restante: float = 360.0
+var duracao_dia_efetiva: float = 360.0
 
 const GERENCIADOR_MEDICAMENTOS := preload("res://scripts/core/gerenciador_medicamentos.gd")
-const DIRETOR_EVENTOS_NOITE_SCRIPT := preload("res://scripts/core/diretor_eventos_noite.gd")
-const CENA_RONDANTE_FAZENDA := preload("res://scenes/monsters/rondante_fazenda.tscn")
-const RASTRO_INVESTIGATIVO_SCRIPT := preload("res://scripts/interactables/rastro_investigativo.gd")
+const CENA_PESADELO_PATH: String = "res://scenes/levels/pesadelo.tscn"
+
+@export var duracao_pesadelo_media: float = 20.0
+var em_pesadelo: bool = false
 
 var pontos_vigilia_ativos: bool = false
 var recargas_luz_disponiveis: int = 2
 var rastros_investigativos: Array[Node3D] = []
 var tempo_vigilia_restante: float = 0.0
-var vigilia_concluida: bool = false
+var vigilia_concluida: bool = true
 var checagens_janela_vigilia: int = 0
 var rastros_inspecionados: int = 0
 var fusiveis_religados_noite: int = 0
@@ -57,7 +58,7 @@ var _ultimo_segundo_emitido: int = -1
 var gerenciador_medicamentos: GerenciadorMedicamentos = null
 var documentos_lidos: Array[StringName] = []
 var jornal_silhueta_lido: bool = false
-var estagio_introducao_silhueta: int = Silhueta.EstagioIntroducao.NAO_INICIADA
+var estagio_introducao_silhueta: int = 0
 
 var jogo_encerrado: bool = false
 var cargas_segunda_chance_restantes: int = 0
@@ -70,10 +71,10 @@ var caminho_save_endless: String = RegistroEndless.CAMINHO_PADRAO
 
 @export_category("Referências da Cena")
 @export var label_tarefas: Label
-@export var silhueta: Node3D
-@export var rondante: Node3D
-@export var diretor_eventos_noite: Node
-@export var ponto_intro_silhueta: Node3D
+@export var silhueta: Node3D = null
+@export var rondante: Node3D = null
+@export var diretor_eventos_noite: Node = null
+@export var ponto_intro_silhueta: Node3D = null
 @export var camera_player: Camera3D
 @export var environment_noite: WorldEnvironment
 @export var radio: Node3D
@@ -114,10 +115,7 @@ func _ready() -> void:
 	if gerenciador_medicamentos.has_signal("escolha_aplicada") and not gerenciador_medicamentos.escolha_aplicada.is_connected(_ao_aplicar_escolha_medicamentos):
 		gerenciador_medicamentos.escolha_aplicada.connect(_ao_aplicar_escolha_medicamentos)
 
-	_garantir_diretor_eventos_noite()
-	_garantir_rondante_cena()
 	_garantir_esconderijo_cena()
-	_conectar_silhueta_introducao()
 	iniciar_novo_dia()
 
 
@@ -161,7 +159,7 @@ func _ao_aplicar_escolha_medicamentos(_opcao: int, _resultado: Dictionary) -> vo
 			mult_t = gerenciador_medicamentos.obter_modificador("mult_tempo_dia", 0.0)
 		var params: Dictionary = obter_parametros_dificuldade_dia(dia_atual)
 		var mult_dia_endless: float = float(params.get("mult_duracao_dia", 1.0))
-		var nova_duracao: float = maxf(30.0, duracao_dia_segundos * mult_dia_endless * (1.0 + mult_t))
+		var nova_duracao: float = maxf(60.0, duracao_dia_segundos * mult_dia_endless * (1.0 + mult_t))
 		var frac_restante: float = clampf(tempo_dia_restante / maxf(1.0, duracao_dia_efetiva), 0.0, 1.0)
 		duracao_dia_efetiva = nova_duracao
 		tempo_dia_restante = maxf(1.0, duracao_dia_efetiva * frac_restante)
@@ -176,74 +174,14 @@ func _ao_aplicar_escolha_medicamentos(_opcao: int, _resultado: Dictionary) -> vo
 				modo_noturno = ModoNoturno.VIGILIA_DOMESTICA
 			iniciar_evento_terror()
 
-
-func _conectar_silhueta_introducao() -> void:
-	if silhueta != null and silhueta.has_signal("introducao_etapa_concluida"):
-		if not silhueta.introducao_etapa_concluida.is_connected(_ao_concluir_etapa_silhueta):
-			silhueta.introducao_etapa_concluida.connect(_ao_concluir_etapa_silhueta)
-
-
-func _ao_concluir_etapa_silhueta(etapa: int) -> void:
-	if etapa == int(Silhueta.EstagioIntroducao.ETAPA_A_APARICAO_PASSIVA):
-		estagio_introducao_silhueta = Silhueta.EstagioIntroducao.ETAPA_B_TESTE_LANTERNA
-	elif etapa == int(Silhueta.EstagioIntroducao.ETAPA_B_TESTE_LANTERNA):
-		estagio_introducao_silhueta = Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL
+	if radio and radio.has_method("tocar_noticia") and not jogo_encerrado:
+		radio.tocar_noticia(dia_atual)
 
 
 func registrar_documento_lido(documento_id: StringName) -> void:
 	if documento_id != &"" and not documentos_lidos.has(documento_id):
 		documentos_lidos.append(documento_id)
-	if documento_id == &"jornal_silhueta":
-		jornal_silhueta_lido = true
-		if horario_atual == 1 and estagio_introducao_silhueta == Silhueta.EstagioIntroducao.NAO_INICIADA and silhueta != null:
-			_ativar_silhueta_com_estagio(Silhueta.EstagioIntroducao.ETAPA_A_APARICAO_PASSIVA)
 	documento_lido_registrado.emit(documento_id)
-
-
-func _ativar_silhueta_com_estagio(etapa: int) -> void:
-	if silhueta == null:
-		return
-	estagio_introducao_silhueta = etapa
-	silhueta.visible = true
-	silhueta.process_mode = PROCESS_MODE_INHERIT
-	if "camera" in silhueta and camera_player:
-		silhueta.camera = camera_player
-	if etapa == Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL:
-		if "estagio_introducao" in silhueta:
-			silhueta.estagio_introducao = Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL
-		if silhueta.has_method("ativar"):
-			silhueta.ativar()
-	elif silhueta.has_method("iniciar_etapa_introducao"):
-		silhueta.iniciar_etapa_introducao(etapa, ponto_intro_silhueta)
-	elif silhueta.has_method("ativar"):
-		silhueta.ativar()
-
-
-func _garantir_diretor_eventos_noite() -> void:
-	if diretor_eventos_noite != null:
-		return
-	diretor_eventos_noite = get_node_or_null("DiretorEventosNoite")
-	if diretor_eventos_noite == null and get_parent() != null:
-		diretor_eventos_noite = get_parent().get_node_or_null("DiretorEventosNoite")
-	if diretor_eventos_noite == null:
-		diretor_eventos_noite = DIRETOR_EVENTOS_NOITE_SCRIPT.new()
-		diretor_eventos_noite.name = "DiretorEventosNoite"
-		add_child(diretor_eventos_noite)
-
-
-func _garantir_rondante_cena() -> void:
-	if rondante != null:
-		return
-	if get_parent() != null:
-		rondante = get_parent().get_node_or_null("RondanteFazenda") as Node3D
-	if rondante == null:
-		rondante = CENA_RONDANTE_FAZENDA.instantiate() as Node3D
-		rondante.name = "RondanteFazenda"
-		rondante.position = Vector3(8.0, 1.0, 28.0)
-		if get_parent() != null:
-			get_parent().call_deferred("add_child", rondante)
-		else:
-			add_child(rondante)
 
 
 func _garantir_esconderijo_cena() -> void:
@@ -264,29 +202,19 @@ func _obter_duracao_transicao_clima() -> float:
 
 func obter_hora_formatada() -> String:
 	if horario_atual == 2:
-		if modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and exigir_conclusao_vigilia_para_dormir and not vigilia_concluida:
-			return "NOITE • VIGÍLIA"
 		return "NOITE"
 	var frac: float = 1.0 - clampf(tempo_dia_restante / maxf(1.0, duracao_dia_efetiva), 0.0, 1.0)
-	var minutos_totais: int = int(roundf(lerpf(360.0, 1080.0, frac))) # Relógio rural: 06:00 -> 18:00
+	var minutos_brutos: float = lerpf(360.0, 1080.0, frac) # Relógio rural: 06:00 -> 18:00
+	var minutos_totais: int = int(floorf(minutos_brutos / 5.0)) * 5
 	var h: int = clampi(minutos_totais / 60, 6, 18)
 	var m: int = minutos_totais % 60
 	return "%02d:%02d" % [h, m]
 
 
 func processar_tempo_dia(delta: float) -> void:
-	if jogo_encerrado:
+	if jogo_encerrado or em_pesadelo:
 		return
 	if horario_atual == 2:
-		if modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida and tempo_vigilia_restante > 0.0:
-			tempo_vigilia_restante = maxf(0.0, tempo_vigilia_restante - delta)
-			var seg_v: int = int(ceilf(tempo_vigilia_restante))
-			if seg_v != _ultimo_segundo_emitido:
-				_ultimo_segundo_emitido = seg_v
-				_emitir_progresso_vigilia()
-				tempo_dia_atualizado.emit(tempo_vigilia_restante, maxf(1.0, duracao_vigilia_efetiva), horario_atual)
-			if tempo_vigilia_restante <= 0.0:
-				concluir_vigilia_domestica()
 		return
 
 	tempo_dia_restante = maxf(0.0, tempo_dia_restante - delta)
@@ -327,12 +255,11 @@ func iniciar_novo_dia() -> void:
 	modo_noturno = ModoNoturno.NENHUM
 	pontos_vigilia_ativos = false
 	tempo_vigilia_restante = 0.0
-	vigilia_concluida = false
+	vigilia_concluida = true
 	checagens_janela_vigilia = 0
 	rastros_inspecionados = 0
 	fusiveis_religados_noite = 0
 	_ultimo_segundo_emitido = -1
-	_limpar_rastros()
 
 	var mult_t: float = 0.0
 	if gerenciador_medicamentos != null:
@@ -340,27 +267,8 @@ func iniciar_novo_dia() -> void:
 	var params: Dictionary = obter_parametros_dificuldade_dia(dia_atual)
 	var mult_dia_endless: float = float(params.get("mult_duracao_dia", 1.0))
 	duracao_vigilia_efetiva = float(params.get("duracao_vigilia", duracao_vigilia_segundos))
-	tempo_dia_restante = maxf(30.0, duracao_dia_segundos * mult_dia_endless * (1.0 + mult_t))
+	tempo_dia_restante = maxf(60.0, duracao_dia_segundos * mult_dia_endless * (1.0 + mult_t))
 	duracao_dia_efetiva = tempo_dia_restante
-
-	if dia_atual > 1 and estagio_introducao_silhueta != Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL:
-		estagio_introducao_silhueta = Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL
-
-	# Desativa e esconde a silhueta no começo do dia
-	if silhueta:
-		silhueta.visible = false
-		silhueta.process_mode = PROCESS_MODE_DISABLED
-		if silhueta.has_method("desativar"):
-			silhueta.desativar()
-
-	if rondante:
-		rondante.visible = false
-		rondante.process_mode = PROCESS_MODE_DISABLED
-		if rondante.has_method("desativar"):
-			rondante.desativar()
-
-	if diretor_eventos_noite and diretor_eventos_noite.has_method("desativar"):
-		diretor_eventos_noite.desativar()
 
 	# Reseta a iluminação para DIA
 	if environment_noite and environment_noite.has_method("mudar_horario"):
@@ -395,8 +303,8 @@ func iniciar_novo_dia() -> void:
 	print("--- DIA %d INICIADO ---" % dia_atual)
 	dia_iniciado.emit(dia_atual)
 
-	if radio and radio.has_method("tocar_noticia"):
-		radio.tocar_noticia(dia_atual)
+	if radio and radio.has_method("parar_radio"):
+		radio.parar_radio()
 
 
 func progredir_tarefa(_id_tarefa: String = "", _quantidade: int = 1) -> void:
@@ -413,21 +321,12 @@ func concluir_tarefa(_id_tarefa: String = "") -> void:
 	if tarefas_concluidas >= tarefas_totais:
 		if modo_noturno == ModoNoturno.NENHUM:
 			modo_noturno = ModoNoturno.VIGILIA_DOMESTICA
-		iniciar_evento_terror()
-	elif tarefas_totais >= 2 and tarefas_concluidas == tarefas_totais - 1 and horario_atual == 0:
-		horario_atual = 1
-		if environment_noite and environment_noite.has_method("mudar_horario"):
-			environment_noite.mudar_horario(1) # 1 = TARDE
-		horario_alterado.emit(1)
-		tempo_dia_atualizado.emit(tempo_dia_restante, duracao_dia_efetiva, horario_atual)
 
 
 func atualizar_hud() -> void:
 	var msg: String
 	if tarefas_concluidas < tarefas_totais:
 		msg = "Dia %d | Tarefas: %d / %d" % [dia_atual, tarefas_concluidas, tarefas_totais]
-	elif exigir_conclusao_vigilia_para_dormir and modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida:
-		msg = "Dia %d | Vigília Noturna (%ds) — Espione a janela, fusível ou rastros!" % [dia_atual, int(ceilf(tempo_vigilia_restante))]
 	else:
 		msg = "Dia %d | Vá para a casa e durma na cama!" % dia_atual
 
@@ -437,131 +336,8 @@ func atualizar_hud() -> void:
 	tarefas_atualizadas.emit(tarefas_concluidas, tarefas_totais, msg)
 
 
-func _emitir_progresso_vigilia() -> void:
-	var total := maxf(1.0, duracao_vigilia_efetiva)
-	var progresso := 1.0 if vigilia_concluida else clampf(1.0 - (tempo_vigilia_restante / total), 0.0, 1.0)
-	var resumo := "Vigília concluída!" if vigilia_concluida else "Vigília: %ds" % int(ceilf(tempo_vigilia_restante))
-	vigilia_progresso_atualizado.emit(progresso, vigilia_concluida, resumo)
-
-
-func ativar_vigilia_domestica() -> void:
-	pontos_vigilia_ativos = true
-	var params: Dictionary = obter_parametros_dificuldade_dia(dia_atual)
-	duracao_vigilia_efetiva = float(params.get("duracao_vigilia", duracao_vigilia_segundos))
-	tempo_vigilia_restante = duracao_vigilia_efetiva
-	vigilia_concluida = false
-	_ultimo_segundo_emitido = int(ceilf(tempo_vigilia_restante))
-	recargas_luz_disponiveis = 2
-	if gerenciador_medicamentos != null:
-		recargas_luz_disponiveis += int(gerenciador_medicamentos.obter_modificador("recargas_noturnas_extras", 0.0))
-	_gerar_rastros_investigativos()
-	_emitir_progresso_vigilia()
-	atualizar_hud()
-
-
-func registrar_vigilia_janela() -> void:
-	if horario_atual != 2 or modo_noturno != ModoNoturno.VIGILIA_DOMESTICA or vigilia_concluida:
-		return
-	checagens_janela_vigilia += 1
-	tempo_vigilia_restante = maxf(0.0, tempo_vigilia_restante - 12.0)
-	_emitir_progresso_vigilia()
-	if tempo_vigilia_restante <= 0.0:
-		concluir_vigilia_domestica()
-	else:
-		atualizar_hud()
-
-
-func registrar_fusivel_religado() -> void:
-	fusiveis_religados_noite += 1
-	if horario_atual == 2 and modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida:
-		tempo_vigilia_restante = maxf(0.0, tempo_vigilia_restante - 15.0)
-		_emitir_progresso_vigilia()
-		if tempo_vigilia_restante <= 0.0:
-			concluir_vigilia_domestica()
-		else:
-			atualizar_hud()
-
-
-func registrar_rastro_inspecionado(_rastro: Node3D = null) -> void:
-	rastros_inspecionados += 1
-	if horario_atual == 2 and modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida:
-		tempo_vigilia_restante = maxf(0.0, tempo_vigilia_restante - 15.0)
-		_emitir_progresso_vigilia()
-		if tempo_vigilia_restante <= 0.0:
-			concluir_vigilia_domestica()
-		else:
-			atualizar_hud()
-
-
-func concluir_vigilia_domestica() -> void:
-	if vigilia_concluida:
-		return
-	vigilia_concluida = true
-	tempo_vigilia_restante = 0.0
-	_emitir_progresso_vigilia()
-	atualizar_hud()
-	status_temporario.emit("A madrugada acalmou. Agora você pode dormir na cama.")
-
-
-func recarregar_luz_vigilia() -> bool:
-	if not pontos_vigilia_ativos or recargas_luz_disponiveis <= 0:
-		return false
-	recargas_luz_disponiveis -= 1
-	status_temporario.emit("Luz recarregada no ponto de vigília! Restantes: %d" % recargas_luz_disponiveis)
-	return true
-
-
-func _gerar_rastros_investigativos() -> void:
-	_limpar_rastros()
-	var specs: Array[Dictionary] = [
-		{
-			"id": &"rastro_horta",
-			"desc": "Pegadas arrastadas perto da horta... alguém parou aqui olhando a janela.",
-			"hook": "LayoutMapaFase1/Setor2_PatioTarefas/HookHorta",
-			"fallback": Vector3(-2.0, 0.571, 26.0)
-		},
-		{
-			"id": &"rastro_cocho",
-			"desc": "Marcas fundas de garras e terra revirada junto ao cocho.",
-			"hook": "LayoutMapaFase1/Setor2_PatioTarefas/HookCocho",
-			"fallback": Vector3(6.0, 0.571, 22.0)
-		},
-		{
-			"id": &"rastro_sul",
-			"desc": "Rastro estranho seguindo na direção da mata fechada ao sul.",
-			"hook": "LayoutMapaFase1/Setor4_ZonaBreuNoturno/HookEntradaBreu",
-			"fallback": Vector3(-8.0, 0.571, 45.0)
-		}
-	]
-
-	var pai_mundo: Node = get_parent() if get_parent() != null else self
-	for i in range(specs.size()):
-		var spec := specs[i]
-		var rastro: RastroInvestigativo = RASTRO_INVESTIGATIVO_SCRIPT.new()
-		rastro.name = "RastroInvestigativo_%d" % i
-		rastro.rastro_id = spec["id"]
-		rastro.descricao_pista = spec["desc"]
-
-		var pos_alvo: Vector3 = spec["fallback"]
-		if pai_mundo != null:
-			var marcador := pai_mundo.get_node_or_null(str(spec["hook"])) as Node3D
-			if marcador != null:
-				pos_alvo = marcador.position
-		pai_mundo.add_child(rastro)
-		if rastro is Node3D:
-			(rastro as Node3D).position = pos_alvo
-		rastros_investigativos.append(rastro)
-
-
-func _limpar_rastros() -> void:
-	for r in rastros_investigativos:
-		if is_instance_valid(r):
-			r.queue_free()
-	rastros_investigativos.clear()
-
-
 func iniciar_evento_terror() -> void:
-	print("A noite caiu... A silhueta despertou.")
+	print("A noite caiu...")
 	horario_atual = 2
 
 	if modo_noturno == ModoNoturno.NENHUM:
@@ -570,102 +346,18 @@ func iniciar_evento_terror() -> void:
 		else:
 			modo_noturno = ModoNoturno.TAREFAS_PENDENTES
 
-	if modo_noturno == ModoNoturno.VIGILIA_DOMESTICA:
-		ativar_vigilia_domestica()
-
 	# Transiciona a iluminação para NOITE
 	if environment_noite and environment_noite.has_method("mudar_horario"):
 		environment_noite.mudar_horario(2) # 2 = NOITE
 	horario_alterado.emit(2)
-	tempo_dia_atualizado.emit(tempo_vigilia_restante if modo_noturno == ModoNoturno.VIGILIA_DOMESTICA else 0.0, duracao_dia_efetiva, horario_atual)
-
-	if silhueta:
-		_conectar_silhueta_introducao()
-		if estagio_introducao_silhueta == Silhueta.EstagioIntroducao.NAO_INICIADA and dia_atual <= 1:
-			_ativar_silhueta_com_estagio(Silhueta.EstagioIntroducao.ETAPA_A_APARICAO_PASSIVA)
-		elif estagio_introducao_silhueta == Silhueta.EstagioIntroducao.ETAPA_B_TESTE_LANTERNA:
-			_ativar_silhueta_com_estagio(Silhueta.EstagioIntroducao.ETAPA_B_TESTE_LANTERNA)
-		else:
-			_ativar_silhueta_com_estagio(Silhueta.EstagioIntroducao.ETAPA_C_CICLO_NORMAL)
-
-	if rondante:
-		rondante.visible = true
-		rondante.process_mode = PROCESS_MODE_INHERIT
-		if rondante.has_method("ativar"):
-			rondante.ativar()
-
-	if diretor_eventos_noite and diretor_eventos_noite.has_method("ativar"):
-		diretor_eventos_noite.ativar()
-
+	tempo_dia_atualizado.emit(0.0, duracao_dia_efetiva, horario_atual)
+	atualizar_hud()
 	noite_iniciada.emit()
 
 
-func registrar_captura_monstro(monstro: Node3D, player: Player) -> void:
-	if jogo_encerrado:
-		return
-	if player != null and player.esta_em_interacao_sequencia():
-		player.cancelar_interacao_sequencia()
-	if player != null and player.has_method("sair_vigilia_janela") and player.esta_olhando_janela():
-		player.sair_vigilia_janela()
-	if get_tree() != null and get_tree().current_scene != null:
-		for n in get_tree().current_scene.find_children("*", "FiltroDelusioControlador", true, false):
-			if n.has_method("registrar_impulso_tensao"):
-				n.registrar_impulso_tensao(0.65)
-				break
-
-	jogador_capturado_na_noite.emit(monstro)
-
-	if cargas_segunda_chance_restantes > 0:
-		cargas_segunda_chance_restantes = 0
-		capturas_sofridas_na_noite += 1
-		if diretor_eventos_noite != null and diretor_eventos_noite.has_method("registrar_alivio_pos_susto"):
-			diretor_eventos_noite.registrar_alivio_pos_susto(8.0)
-		protecao_captura_alterada.emit(false)
-		segunda_chance_consumida.emit(monstro)
-		status_temporario.emit("A pílula segurou o golpe! Próxima captura será fatal — recue!")
-	else:
-		disparar_game_over(monstro)
-
-
-func disparar_game_over(monstro: Node3D = null) -> Dictionary:
-	if jogo_encerrado:
-		return ultimo_resumo_game_over
-	jogo_encerrado = true
-
-	var nome_causa: String = "Criatura Noturna"
-	if monstro != null and is_instance_valid(monstro):
-		if "config" in monstro and monstro.config != null and "nome_criatura" in monstro.config:
-			var nome_cfg: String = str(monstro.config.nome_criatura).strip_edges()
-			if not nome_cfg.is_empty():
-				nome_causa = nome_cfg
-		elif monstro is Silhueta or str(monstro.name).to_lower().contains("silhueta"):
-			nome_causa = "Silhueta"
-		elif monstro is RondanteFazenda or str(monstro.name).to_lower().contains("rondante"):
-			nome_causa = "Rondante da Fazenda"
-
-	var reg: Dictionary
-	if _pode_persistir_save_endless():
-		reg = RegistroEndless.registrar_fim_rodada(dias_sobrevividos, tarefas_concluidas_rodada, caminho_save_endless)
-	else:
-		reg = RegistroEndless.carregar(caminho_save_endless)
-		reg["novo_recorde"] = dias_sobrevividos > int(reg.get("recorde_dias", 0))
-		reg["recorde_dias"] = maxi(int(reg.get("recorde_dias", 0)), dias_sobrevividos)
-		reg["recorde_tarefas"] = maxi(int(reg.get("recorde_tarefas", 0)), tarefas_concluidas_rodada)
-
-	ultimo_resumo_game_over = {
-		"causa": nome_causa,
-		"dia_atual": dia_atual,
-		"dias_sobrevividos": dias_sobrevividos,
-		"tarefas_rodada": tarefas_concluidas_rodada,
-		"recorde_dias": int(reg.get("recorde_dias", dias_sobrevividos)),
-		"recorde_tarefas": int(reg.get("recorde_tarefas", tarefas_concluidas_rodada)),
-		"novo_recorde": bool(reg.get("novo_recorde", false)),
-		"modo": obter_nome_modo_jogo()
-	}
-
-	status_temporario.emit("Você foi alcançado por %s." % nome_causa)
-	game_over_disparado.emit(ultimo_resumo_game_over)
-	return ultimo_resumo_game_over
+func disparar_game_over(_monstro: Node3D = null) -> Dictionary:
+	# Mecânica de morte/Game Over removida.
+	return {}
 
 
 func reiniciar_rodada_endless() -> void:
@@ -676,16 +368,10 @@ func reiniciar_rodada_endless() -> void:
 		get_tree().reload_current_scene()
 
 
-func tentar_dormir(ignorar_vigilia: bool = false) -> void:
-	if jogo_encerrado:
+func tentar_dormir(_ignorar_vigilia: bool = false) -> void:
+	if jogo_encerrado or em_pesadelo:
 		return
 	if tarefas_concluidas >= tarefas_totais:
-		if exigir_conclusao_vigilia_para_dormir and modo_noturno == ModoNoturno.VIGILIA_DOMESTICA and not vigilia_concluida and not ignorar_vigilia:
-			var aviso_v := "Vigília em curso (%ds)! Espione a janela, cheque o quadro de luz ou os rastros." % int(ceilf(tempo_vigilia_restante))
-			if label_tarefas:
-				label_tarefas.text = aviso_v
-			status_temporario.emit(aviso_v)
-			return
 		print("Você dormiu em segurança...")
 		var dia_concluido: int = dia_atual
 		dias_sobrevividos += 1
@@ -695,7 +381,10 @@ func tentar_dormir(ignorar_vigilia: bool = false) -> void:
 			novo_rec = bool(reg.get("novo_recorde", false))
 		noite_sobrevivida.emit(dia_concluido, dias_sobrevividos, novo_rec)
 		dia_atual += 1
-		iniciar_novo_dia()
+		if dia_concluido == 1 and DisplayServer.get_name() != "headless":
+			_executar_sequencia_pesadelo()
+		else:
+			iniciar_novo_dia()
 	else:
 		print("Ainda não! Você precisa terminar todas as tarefas do dia antes de dormir.")
 		var aviso = "Você ainda tem tarefas pendentes!"
@@ -705,3 +394,116 @@ func tentar_dormir(ignorar_vigilia: bool = false) -> void:
 		# Restaura texto normal após 3 segundos
 		await get_tree().create_timer(3.0).timeout
 		atualizar_hud()
+
+
+func _executar_sequencia_pesadelo() -> void:
+	var tree := get_tree()
+	if tree == null or tree.root == null:
+		iniciar_novo_dia()
+		return
+
+	var cena_pesadelo := load(CENA_PESADELO_PATH) as PackedScene
+	if cena_pesadelo == null:
+		push_warning("Cena de pesadelo não encontrada em: %s" % CENA_PESADELO_PATH)
+		iniciar_novo_dia()
+		return
+
+	em_pesadelo = true
+	var proc_anterior := process_mode
+	process_mode = PROCESS_MODE_ALWAYS
+
+	var fade_layer := CanvasLayer.new()
+	fade_layer.layer = 100
+	fade_layer.process_mode = PROCESS_MODE_ALWAYS
+	var fade_rect := ColorRect.new()
+	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fade_rect.color = Color(0.0, 0.0, 0.0, 0.0)
+	fade_layer.add_child(fade_rect)
+	tree.root.add_child(fade_layer)
+
+	var tw_in := tree.create_tween()
+	tw_in.tween_property(fade_rect, "color:a", 1.0, 0.7)
+	await tw_in.finished
+
+	var world_root := tree.current_scene
+	var canvas_visiveis: Array[Dictionary] = []
+	if world_root != null:
+		for nodo in world_root.find_children("*", "CanvasLayer", true, false):
+			var cl := nodo as CanvasLayer
+			if cl != null:
+				canvas_visiveis.append({"node": cl, "visible": cl.visible})
+				cl.visible = false
+		world_root.visible = false
+		world_root.process_mode = PROCESS_MODE_DISABLED
+
+	var pesadelo_inst := cena_pesadelo.instantiate()
+	tree.root.add_child(pesadelo_inst)
+	var cam_pesadelo := pesadelo_inst.find_child("Camera3D", true, false) as Camera3D
+	if cam_pesadelo != null:
+		cam_pesadelo.make_current()
+
+	var tw_out := tree.create_tween()
+	tw_out.tween_property(fade_rect, "color:a", 0.0, 0.7)
+	await tw_out.finished
+
+	var duracao := randf_range(maxf(5.0, duracao_pesadelo_media - 2.0), duracao_pesadelo_media + 2.0)
+	await tree.create_timer(duracao).timeout
+
+	var tw_end := tree.create_tween()
+	tw_end.tween_property(fade_rect, "color:a", 1.0, 0.7)
+	await tw_end.finished
+
+	if is_instance_valid(pesadelo_inst):
+		pesadelo_inst.queue_free()
+
+	if world_root != null and is_instance_valid(world_root):
+		world_root.process_mode = PROCESS_MODE_INHERIT
+		world_root.visible = true
+		for item in canvas_visiveis:
+			var cl := item["node"] as CanvasLayer
+			if cl != null and is_instance_valid(cl):
+				cl.visible = bool(item["visible"])
+	if camera_player != null and is_instance_valid(camera_player):
+		camera_player.make_current()
+
+	process_mode = proc_anterior
+	em_pesadelo = false
+	iniciar_novo_dia()
+
+	var tw_wake := tree.create_tween()
+	tw_wake.tween_property(fade_rect, "color:a", 0.0, 0.7)
+	await tw_wake.finished
+
+	if is_instance_valid(fade_layer):
+		fade_layer.queue_free()
+
+
+func recarregar_luz_vigilia() -> bool:
+	if not pontos_vigilia_ativos or recargas_luz_disponiveis <= 0:
+		return false
+	recargas_luz_disponiveis -= 1
+	return true
+
+
+func registrar_captura_monstro(_monstro: Node3D, _player: Node3D = null) -> void:
+	# Mecânica de morte/Game Over removida; método mantido para compatibilidade.
+	pass
+
+
+func registrar_fusivel_religado() -> void:
+	fusiveis_religados_noite += 1
+
+
+func registrar_rastro_inspecionado(_rastro: Node3D = null) -> void:
+	rastros_inspecionados += 1
+
+
+func registrar_vigilia_janela() -> void:
+	checagens_janela_vigilia += 1
+
+
+func concluir_vigilia_domestica() -> void:
+	vigilia_concluida = true
+	tempo_vigilia_restante = 0.0
+	vigilia_progresso_atualizado.emit(1.0, true, "Vigília concluída.")

@@ -4,22 +4,18 @@
 [ext_resource type="Script" uid="uid://cuqsqvr3m8xxl" path="res://scripts/player/player.gd" id="1_fj7yv"]
 [ext_resource type="Script" uid="uid://bd8lmgl3kv0nw" path="res://scripts/core/game_manager.gd" id="1_gbfbk"]
 [ext_resource type="PackedScene" uid="uid://cp36w1u2p3dgk" path="res://scenes/props/flashlight.tscn" id="2_036b0"]
-[ext_resource type="PackedScene" uid="uid://qovali6bqyg" path="res://scenes/monsters/silhueta.tscn" id="3_tlwt5"]
 [ext_resource type="Script" uid="uid://c02d3gemekp3" path="res://scripts/environment/world_environment.gd" id="4_dwbse"]
 [ext_resource type="Script" uid="uid://cnds3oq3xfmy8" path="res://scripts/core/gerenciador_de_tarefas.gd" id="8_gbfbk"]
-[ext_resource type="Script" uid="uid://qwyb626oa7bp" path="res://scripts/interactables/tarefa_interativa.gd" id="8_ioo17"]
 [ext_resource type="Script" uid="uid://wa27lagnc7gq" path="res://scripts/ui/hud.gd" id="9_wse8f"]
 [ext_resource type="PackedScene" uid="uid://cq0vevrdh55bm" path="res://assets/environment/casa/Casa _final-col.glb" id="12_q5onr"]
 [ext_resource type="PackedScene" uid="uid://pausamenu001" path="res://scenes/ui/menu_pausa.tscn" id="15_xo05s"]
 [ext_resource type="Script" uid="uid://cy7h84l71d5kc" path="res://scripts/environment/casa_controlador.gd" id="16_casa"]
-[ext_resource type="PackedScene" uid="uid://b7k4m2qarond1" path="res://scenes/monsters/rondante_fazenda.tscn" id="17_rond"]
 [ext_resource type="PackedScene" path="res://scenes/props/documento_mesa.tscn" id="18_docmesa"]
 [ext_resource type="PackedScene" uid="uid://6n30jxdxtpig" path="res://paiol.tscn" id="18_gs7m4"]
 [ext_resource type="PackedScene" uid="uid://cas4c1u8sq2kn" path="res://plantacao_aboboras.tscn" id="19_btahq"]
 [ext_resource type="PackedScene" path="res://scenes/props/jornal_mesa.tscn" id="19_jornalmesa"]
 [ext_resource type="PackedScene" uid="uid://cw7cp6fncyc8s" path="res://caixa_da_agua.tscn" id="20_caixa"]
 [ext_resource type="PackedScene" uid="uid://1aie1wcmikp6" path="res://scenes/props/fita_silver_tape.tscn" id="21_tape"]
-[ext_resource type="Script" uid="uid://cepalath2gw4u" path="res://scripts/monsters/ponto_ronda.gd" id="22_pontoronda"]
 [ext_resource type="Script" uid="uid://comb43lojh2fd" path="res://scripts/interactables/janela_vigilia.gd" id="24_janelavig"]
 [ext_resource type="PackedScene" path="res://scenes/props/esconderijo_patio.tscn" id="25_escpatio"]
 [ext_resource type="PackedScene" path="res://scenes/props/documento_rondante.tscn" id="26_docrond"]
@@ -41,20 +37,16 @@ size = Vector3(1.4, 1.5, 0.6)
 
 [node name="World" type="Node3D" unique_id=1853283299]
 
-[node name="GameManager" type="Node" parent="." unique_id=901289966 node_paths=PackedStringArray("label_tarefas", "silhueta", "rondante", "ponto_intro_silhueta", "camera_player", "environment_noite", "radio")]
+[node name="GameManager" type="Node" parent="." unique_id=901289966 node_paths=PackedStringArray("label_tarefas", "camera_player", "environment_noite", "radio")]
 script = ExtResource("1_gbfbk")
 tarefas_totais = 2
-exigir_conclusao_vigilia_para_dormir = true
 label_tarefas = NodePath("../Hud/LabelTarefas")
-silhueta = NodePath("../shilhueta")
-rondante = NodePath("../RondanteFazenda")
-ponto_intro_silhueta = NodePath("../PontoIntroSilhueta")
 camera_player = NodePath("../CharacterBody3D/Camera3D")
 environment_noite = NodePath("../WorldEnvironment")
 radio = NodePath("../Casa _final-col/radio/StaticBody3D")
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=1632349647 node_paths=PackedStringArray("reticula") groups=["player"]]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 26.134731, 0.62, 5.6553993)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 25.456417, 0.62, 7.1958256)
 script = ExtResource("1_fj7yv")
 reticula = NodePath("../Hud/ColorRect")
 
@@ -62,7 +54,7 @@ reticula = NodePath("../Hud/ColorRect")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, -0.5585556)
 
 [node name="Flashlight" parent="CharacterBody3D/Camera3D" unique_id=1723816638 instance=ExtResource("2_036b0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28, -0.22, -0.45)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2800002, -0.22000003, -0.37013054)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="CharacterBody3D/Camera3D/Flashlight" unique_id=1410599914]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.15)
@@ -91,17 +83,6 @@ cast_shadow = 0
 script = ExtResource("29_gerador_grama")
 raios_exclusao_circulares = Array[Vector3]([Vector3(28.4, 33.2, 13), Vector3(0.5, -10.5, 14)])
 material_grama = ExtResource("30_mat_grama")
-
-[node name="shilhueta" parent="." unique_id=272194737 node_paths=PackedStringArray("camera") instance=ExtResource("3_tlwt5")]
-transform = Transform3D(1.4772635, 0, 0, 0, 2.2648096, 0, 0, 0, 1.8086593, 4.901308, 10.263115, 70.305115)
-camera = NodePath("../CharacterBody3D/Camera3D")
-look_threshold = 0.69
-
-[node name="RondanteFazenda" parent="." unique_id=706311458 instance=ExtResource("17_rond")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 28)
-
-[node name="PontoIntroSilhueta" type="Marker3D" parent="." unique_id=371815083 groups=["ponto_intro_silhueta"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1, 31)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=971834523]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.32431, 53.419754, 58.1848)
@@ -156,7 +137,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.2, 0.8, 15.5)
 [node name="paiol" parent="." unique_id=2143289440 instance=ExtResource("18_gs7m4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8142166, 0.43442667, 69.21681)
 
-[node name="ConjuntoTabuas" parent="paiol" instance=ExtResource("32_conjunto_tabuas")]
+[node name="ConjuntoTabuas" parent="paiol" unique_id=111179883 instance=ExtResource("32_conjunto_tabuas")]
 transform = Transform3D(0.951057, 0, -0.309017, 0, 1, 0, 0.309017, 0, 0.951057, 1.05, 0.29, -0.35)
 
 [node name="plantacao_aboboras" parent="." unique_id=53389048 instance=ExtResource("19_btahq")]
@@ -174,7 +155,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.34, 1.7, 36.2)
 
 [node name="JanelaVigilia" type="StaticBody3D" parent="LayoutMapaFase1/Setor1_CasaPatio/HookJanelaVigilia" unique_id=702869083]
 script = ExtResource("24_janelavig")
-ponto_camera_janela = NodePath("PontoCameraJanela")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="LayoutMapaFase1/Setor1_CasaPatio/HookJanelaVigilia/JanelaVigilia" unique_id=1467046830]
 shape = SubResource("BoxShape3D_janela_vig")
@@ -208,50 +188,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.571, 22)
 
 [node name="HookCeleiro" type="Marker3D" parent="LayoutMapaFase1/Setor3_PerimetroCeleiro" unique_id=1744432436]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.571, -3.6)
-
-[node name="PontoPatrulha_1" type="Marker3D" parent="LayoutMapaFase1/Setor3_PerimetroCeleiro" unique_id=72326540]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.571, 18)
-script = ExtResource("22_pontoronda")
-zona_nome = "patio"
-
-[node name="PontoPatrulha_2" type="Marker3D" parent="LayoutMapaFase1/Setor3_PerimetroCeleiro" unique_id=568048904]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.571, 22)
-script = ExtResource("22_pontoronda")
-zona_nome = "patio"
-
-[node name="PontoPatrulha_3" type="Marker3D" parent="LayoutMapaFase1/Setor3_PerimetroCeleiro" unique_id=1790230281]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.571, 10)
-script = ExtResource("22_pontoronda")
-zona_nome = "celeiro"
-
-[node name="PontoPatrulha_4" type="Marker3D" parent="LayoutMapaFase1/Setor3_PerimetroCeleiro" unique_id=1265678535]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.571, 6)
-script = ExtResource("22_pontoronda")
-zona_nome = "celeiro"
-
-[node name="PontoWallPeek_1" type="Marker3D" parent="LayoutMapaFase1/Setor3_PerimetroCeleiro" unique_id=2007080736]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.571, 12)
-script = ExtResource("22_pontoronda")
-tipo_ponto = 1
-zona_nome = "celeiro"
-
-[node name="PontoWallPeek_2" type="Marker3D" parent="LayoutMapaFase1/Setor3_PerimetroCeleiro" unique_id=1334221675]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.571, 14)
-script = ExtResource("22_pontoronda")
-tipo_ponto = 1
-zona_nome = "celeiro"
-
-[node name="PontoEntradaSaida_1" type="Marker3D" parent="LayoutMapaFase1/Setor3_PerimetroCeleiro" unique_id=440365380]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.571, -12)
-script = ExtResource("22_pontoronda")
-tipo_ponto = 2
-zona_nome = "borda"
-
-[node name="PontoEntradaSaida_2" type="Marker3D" parent="LayoutMapaFase1/Setor3_PerimetroCeleiro" unique_id=1890175175]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26, 0.571, 6)
-script = ExtResource("22_pontoronda")
-tipo_ponto = 2
-zona_nome = "borda"
 
 [node name="Setor4_ZonaBreuNoturno" type="Node3D" parent="LayoutMapaFase1" unique_id=847505783]
 

@@ -66,7 +66,7 @@ func _ready() -> void:
 			GameManager.instance.game_over_disparado.connect(_ao_game_over)
 		if _filtro_delusio:
 			_filtro_delusio.definir_estado_horario(GameManager.instance.horario_atual, true)
-		if DisplayServer.get_name() != "headless":
+		if DisplayServer.get_name() != "headless" and not GameManager.instance.em_pesadelo:
 			call_deferred("abrir_menu_medicamentos")
 
 	_criar_painel_sequencia()
@@ -312,10 +312,7 @@ func _atualizar_label_timer_dia() -> void:
 			_label_timer_dia.text = "TARDE  •  %s" % hora_txt
 			_label_timer_dia.add_theme_color_override("font_color", TemaSurvivalHorror.COR_STATUS_AMBAR)
 		_:
-			if gerente.modo_noturno == GameManager.ModoNoturno.VIGILIA_DOMESTICA and gerente.exigir_conclusao_vigilia_para_dormir and not gerente.vigilia_concluida:
-				_label_timer_dia.text = "VIGÍLIA  •  %ds" % int(ceilf(gerente.tempo_vigilia_restante))
-			else:
-				_label_timer_dia.text = "DIA %d  •  %s" % [gerente.dia_atual, hora_txt]
+			_label_timer_dia.text = "DIA %d  •  %s" % [gerente.dia_atual, hora_txt]
 			_label_timer_dia.add_theme_color_override("font_color", TemaSurvivalHorror.COR_DESTAQUE_VERMELHO)
 
 

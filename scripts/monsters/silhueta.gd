@@ -349,8 +349,9 @@ func receber_foco_lanterna(delta: float) -> void:
 		if estagio_introducao == EstagioIntroducao.ETAPA_B_TESTE_LANTERNA:
 			estagio_introducao = EstagioIntroducao.ETAPA_C_CICLO_NORMAL
 			introducao_etapa_concluida.emit(int(EstagioIntroducao.ETAPA_B_TESTE_LANTERNA))
-		_em_investida = true
-		_mudar_estado(Estado.INVESTIDA)
+		# Mecânica de perseguição/investida removida: a Silhueta recua em vez de perseguir.
+		recuar_anel()
+		mover_para_novo_local()
 	elif tempo_olhando_lanterna >= limiar_ameaca_lanterna and estado_atual == Estado.OBSERVANDO:
 		_mudar_estado(Estado.AMEACA_LANTERNA)
 
