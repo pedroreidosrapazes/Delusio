@@ -62,12 +62,14 @@ reticula = NodePath("../Hud/ColorRect")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, -0.5585556)
 
 [node name="Flashlight" parent="CharacterBody3D/Camera3D" unique_id=1723816638 instance=ExtResource("2_036b0")]
-transform = Transform3D(4, 0, 0, 0, 4, 0, 0, 0, 4, 1.3474655, -0.8086505, -0.97031784)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28, -0.22, -0.45)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="CharacterBody3D/Camera3D/Flashlight" unique_id=1410599914]
-transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, -14.217116)
-light_energy = 4.0
-spot_range = 25.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.15)
+light_energy = 4.8
+shadow_enabled = true
+spot_range = 34.0
+spot_angle = 54.0
 
 [node name="RayCast3D" type="RayCast3D" parent="CharacterBody3D/Camera3D" unique_id=43761709]
 target_position = Vector3(0, 0, -2.5)
